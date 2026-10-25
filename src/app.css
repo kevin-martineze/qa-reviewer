@@ -4,6 +4,17 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /*
+ * Los componentes de shadcn-svelte usan `data-checked:`, `data-open:`, etc.
+ * bits-ui 2 marca el estado con `data-state="…"`, así que traducimos esos
+ * nombres aquí (aceptan las dos formas) en vez de editar `ui/` a mano.
+ */
+@custom-variant data-checked (&:where([data-state='checked'], [data-checked]));
+@custom-variant data-unchecked (&:where([data-state='unchecked'], [data-unchecked]));
+@custom-variant data-open (&:where([data-state='open'], [data-open]));
+@custom-variant data-closed (&:where([data-state='closed'], [data-closed]));
+@custom-variant data-active (&:where([data-state='active'], [data-active]));
+
+/*
  * Design System qa-reviewer — tokens heredados del prototipo validado
  * (qa-proto-backup/qa-reviewer.html). Base slate de shadcn + tokens
  * semánticos success/warning/danger/info/pin.
@@ -66,6 +77,11 @@
   --sidebar-ring: 240 5.9% 10%;
 
   --radius: 0.5rem;
+
+  /* Gráficos (skill dataviz): categórica 1–2 y estado crítico, validados contra la card. */
+  --viz-1: #2a78d6;
+  --viz-2: #eb6834;
+  --viz-critical: #d03b3b;
 }
 
 .dark {
@@ -121,9 +137,16 @@
   --sidebar-accent-foreground: 0 0% 98%;
   --sidebar-border: 240 3.7% 17%;
   --sidebar-ring: 240 4.9% 83.9%;
+
+  --viz-1: #3987e5;
+  --viz-2: #d95926;
+  --viz-critical: #d03b3b;
 }
 
 @theme inline {
+  --color-viz-1: var(--viz-1);
+  --color-viz-2: var(--viz-2);
+  --color-viz-critical: var(--viz-critical);
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
   --color-card: hsl(var(--card));

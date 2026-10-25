@@ -10,6 +10,7 @@ import { setSession } from '$lib/server/session';
 const REASONS = {
   expired: { tone: 'warning', text: 'Tu sesión venció. Vuelve a entrar para seguir.' },
   logout: { tone: 'info', text: 'Cerraste sesión.' },
+  everywhere: { tone: 'info', text: 'Cerraste sesión en todos tus dispositivos.' },
   password_reset: { tone: 'success', text: 'Listo, ya puedes entrar con tu contraseña nueva.' },
 } as const;
 

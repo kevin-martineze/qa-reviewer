@@ -30,7 +30,7 @@
   let { reviews, people, now }: Props = $props();
 </script>
 
-<div class="scroll-x-hint overflow-x-auto rounded-lg border">
+<div class="overflow-hidden rounded-lg border">
   <Table class="min-w-4xl">
     <TableHeader>
       <TableRow>

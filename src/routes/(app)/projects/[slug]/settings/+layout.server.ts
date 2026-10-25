@@ -1,14 +1,9 @@
-import { error } from '@sveltejs/kit';
 import type { LayoutServerLoad } from './$types';
 import { gateway } from '$lib/server/gateway';
-import { requirePermission } from '$lib/server/guards';
+import { requirePermission, unwrap } from '$lib/server/guards';
 
-export const load: LayoutServerLoad = async ({ locals, params }) => {
-  requirePermission(locals, 'projects:configure');
-
-  const result = await gateway(locals).directory.listProjects();
-  const project = result.ok ? result.data.find((p) => p.id === params.slug) : undefined;
-  if (!project) throw error(404, { message: 'Proyecto no encontrado.', code: 'not_found' });
-
+export const load: LayoutServerLoad = async ({ locals, params, fetch, url }) => {
+  requirePermission(locals, 'projects:configure', params.slug);
+  const project = unwrap(await gateway(locals, fetch).directory.getProject(params.slug), url);
   return { project };
 };

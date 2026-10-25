@@ -10,4 +10,6 @@ export async function login(page: Page, email: string, redirectTo?: string): Pro
   await page.getByLabel('Contraseña', { exact: true }).fill(DEMO_PASSWORD);
   await page.getByRole('button', { name: 'Entrar' }).click();
   await expect(page).not.toHaveURL(/\/login/);
+  // Espera la hidratación: sin ella, un clic temprano no llega a los handlers.
+  await page.waitForLoadState('networkidle');
 }
