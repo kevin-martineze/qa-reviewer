@@ -4,7 +4,7 @@
 // Los colores hex son de la «captura» simulada, no de la UI: no aplican los tokens.
 import type { Box, ElementRef, ScreenElement } from '$lib/api/types';
 
-import { measuredBox, privateCapture } from './private-captures';
+import { liderisCapture, measuredBox } from './lideris-captures';
 
 export interface SceneNode {
   x: number;
@@ -609,13 +609,14 @@ export function sceneById(id: string): Scene | undefined {
   return REGISTRY.get(id);
 }
 
-/** Captura real local (fixtures-private) si existe; si no, el SVG sintético. */
+/** Captura real anonimizada de Lideris (static/demo/lideris) si existe; si no, el SVG sintético. */
 export function assetUrl(id: string): string {
-  return privateCapture(id) ? `/mock-assets/${id}.png` : `/mock-assets/${id}.svg`;
+  const capture = liderisCapture(id);
+  return capture ? `/demo/lideris/${capture.file}` : `/mock-assets/${id}.svg`;
 }
 
 export function isRealCapture(id: string): boolean {
-  return privateCapture(id) !== undefined;
+  return liderisCapture(id) !== undefined;
 }
 
 /**
