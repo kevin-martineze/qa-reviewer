@@ -6,18 +6,19 @@
     LogOut,
     Monitor,
     Moon,
-    RefreshCw,
     Sun,
     SunMoon,
     User as UserIcon,
+    Users,
   } from '@lucide/svelte';
+  import { tick } from 'svelte';
   import { resetMode, setMode, userPrefersMode } from 'mode-watcher';
-  import { untrack } from 'svelte';
 
+  import { enhance } from '$app/forms';
   import { resolve } from '$app/paths';
+  import { page } from '$app/state';
+
   import type { SessionUser } from '$lib/api/types';
-  import { Avatar, AvatarFallback } from '$lib/components/atoms/avatar';
-  import { Button } from '$lib/components/atoms/button';
   import {
     DropdownMenu,
     DropdownMenuContent,
@@ -30,6 +31,8 @@
     DropdownMenuSubTrigger,
     DropdownMenuTrigger,
   } from '$lib/components/atoms/dropdown-menu';
+  import UserAvatar from '$lib/components/molecules/UserAvatar.svelte';
+  import { ORG_ROLE } from '$lib/domain/labels';
 
   interface MockUser {
     id: string;
@@ -38,65 +41,89 @@
 
   interface Props {
     user: SessionUser;
+    roleLabel: string;
     isMock: boolean;
     mockUsers: MockUser[];
   }
 
-  let { user, isMock, mockUsers }: Props = $props();
+  let { user, roleLabel, isMock, mockUsers }: Props = $props();
 
-  const initials = $derived(
-    user.name
-      .split(' ')
-      .map((part) => part[0])
-      .slice(0, 2)
-      .join('')
-      .toUpperCase(),
-  );
+  let logoutForm = $state<HTMLFormElement | null>(null);
+  let switchForm = $state<HTMLFormElement | null>(null);
+  let switchTo = $state('');
 
-  const themeLabel = $derived(
-    userPrefersMode.current === 'light'
-      ? 'Claro'
-      : userPrefersMode.current === 'dark'
-        ? 'Oscuro'
-        : 'Sistema',
-  );
+  const here = $derived(page.url.pathname + page.url.search);
 
-  let selectedId = $state(untrack(() => user.id));
+  async function switchUser(id: string) {
+    switchTo = id;
+    await tick();
+    switchForm?.requestSubmit();
+  }
+
+  const THEMES = [
+    { mode: 'light', label: 'Claro', icon: Sun },
+    { mode: 'dark', label: 'Oscuro', icon: Moon },
+    { mode: 'system', label: 'Sistema', icon: Monitor },
+  ] as const;
+
+  function applyTheme(mode: 'light' | 'dark' | 'system') {
+    if (mode === 'system') resetMode();
+    else setMode(mode);
+  }
 </script>
+
+<form
+  bind:this={logoutForm}
+  method="post"
+  action="{resolve('/(app)/session')}?/logout"
+  class="hidden"
+></form>
+{#if isMock}
+  <form
+    bind:this={switchForm}
+    method="post"
+    action="{resolve('/(app)/session')}?/switchUser"
+    use:enhance
+    class="hidden"
+  >
+    <input type="hidden" name="userId" value={switchTo} />
+    <input type="hidden" name="redirectTo" value={here} />
+  </form>
+{/if}
 
 <DropdownMenu>
   <DropdownMenuTrigger
-    class="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-muted focus-visible:outline-none"
+    class="flex items-center gap-2 rounded-md py-1 pr-2 pl-1 text-sm transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+    aria-label="Menú de usuario"
   >
-    <Avatar class="size-7">
-      <AvatarFallback class="text-xs">{initials}</AvatarFallback>
-    </Avatar>
-    <span class="hidden max-w-40 truncate text-sm font-medium md:inline">{user.name}</span>
+    <UserAvatar name={user.name} />
+    <span class="hidden max-w-40 truncate font-medium md:inline">{user.name}</span>
   </DropdownMenuTrigger>
 
-  <DropdownMenuContent align="end" class="w-56">
-    <DropdownMenuLabel>
-      <p class="text-sm font-medium">{user.name}</p>
-      <p class="text-xs font-normal text-muted-foreground">{user.email}</p>
+  <DropdownMenuContent align="end" class="w-64">
+    <DropdownMenuLabel class="font-normal">
+      <p class="truncate text-sm font-medium">{user.name}</p>
+      <p class="truncate text-xs text-muted-foreground">{user.email}</p>
+      <p class="mt-1 text-xs text-muted-foreground">
+        {ORG_ROLE[user.orgRole].label} · {roleLabel}
+      </p>
     </DropdownMenuLabel>
     <DropdownMenuSeparator />
 
     <DropdownMenuGroup>
       <DropdownMenuItem>
         {#snippet child({ props })}
-          <a href={resolve('/settings/profile')} {...props}><UserIcon class="size-4" /> Perfil</a>
+          <a {...props} href={resolve('/settings/profile')}><UserIcon /> Perfil</a>
         {/snippet}
       </DropdownMenuItem>
       <DropdownMenuItem>
         {#snippet child({ props })}
-          <a href={resolve('/settings/notifications')} {...props}
-            ><Bell class="size-4" /> Notificaciones</a
-          >
+          <a {...props} href={resolve('/settings/notifications')}><Bell /> Notificaciones</a>
         {/snippet}
       </DropdownMenuItem>
       <DropdownMenuItem>
         {#snippet child({ props })}
-          <a href={resolve('/settings/tokens')} {...props}><KeyRound class="size-4" /> Tokens</a>
+          <a {...props} href={resolve('/settings/tokens')}><KeyRound /> Tokens de la skill</a>
         {/snippet}
       </DropdownMenuItem>
     </DropdownMenuGroup>
@@ -104,55 +131,40 @@
 
     <DropdownMenuSub>
       <DropdownMenuSubTrigger>
-        <SunMoon class="size-4" /> Tema
-        <span class="ml-auto text-xs text-muted-foreground">{themeLabel}</span>
+        <SunMoon /> Tema
       </DropdownMenuSubTrigger>
       <DropdownMenuSubContent>
-        <DropdownMenuItem onclick={() => setMode('light')}>
-          <Sun class="size-4" /> Claro
-          {#if userPrefersMode.current === 'light'}<Check class="ml-auto size-4" />{/if}
-        </DropdownMenuItem>
-        <DropdownMenuItem onclick={() => setMode('dark')}>
-          <Moon class="size-4" /> Oscuro
-          {#if userPrefersMode.current === 'dark'}<Check class="ml-auto size-4" />{/if}
-        </DropdownMenuItem>
-        <DropdownMenuItem onclick={() => resetMode()}>
-          <Monitor class="size-4" /> Sistema
-          {#if userPrefersMode.current === 'system'}<Check class="ml-auto size-4" />{/if}
-        </DropdownMenuItem>
+        {#each THEMES as theme (theme.mode)}
+          {@const Icon = theme.icon}
+          <DropdownMenuItem onSelect={() => applyTheme(theme.mode)}>
+            <Icon />
+            {theme.label}
+            {#if userPrefersMode.current === theme.mode}<Check class="ml-auto" />{/if}
+          </DropdownMenuItem>
+        {/each}
       </DropdownMenuSubContent>
     </DropdownMenuSub>
 
     {#if isMock}
-      <DropdownMenuSeparator />
-      <div class="px-1.5 py-1">
-        <p class="flex items-center gap-1.5 px-1.5 py-1 text-xs font-medium text-muted-foreground">
-          <RefreshCw class="size-4" /> Cambiar usuario (mock)
-        </p>
-        <form method="post" action={resolve('/api/switch-user')} class="space-y-1.5 px-1.5 pt-1">
-          <select
-            name="userId"
-            bind:value={selectedId}
-            class="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
-          >
-            {#each mockUsers as u (u.id)}
-              <option value={u.id}>{u.name}</option>
-            {/each}
-          </select>
-          <Button type="submit" variant="outline" size="sm" class="w-full">Cambiar</Button>
-        </form>
-      </div>
+      <DropdownMenuSub>
+        <DropdownMenuSubTrigger>
+          <Users /> Cambiar usuario (mock)
+        </DropdownMenuSubTrigger>
+        <DropdownMenuSubContent class="w-56">
+          {#each mockUsers as u (u.id)}
+            <DropdownMenuItem onSelect={() => switchUser(u.id)} disabled={u.id === user.id}>
+              <UserAvatar name={u.name} size="xs" />
+              <span class="flex-1 truncate">{u.name}</span>
+              {#if u.id === user.id}<Check />{/if}
+            </DropdownMenuItem>
+          {/each}
+        </DropdownMenuSubContent>
+      </DropdownMenuSub>
     {/if}
 
     <DropdownMenuSeparator />
-    <form method="post" action={resolve('/logout')}>
-      <DropdownMenuItem>
-        {#snippet child({ props })}
-          <button type="submit" class="w-full" {...props}
-            ><LogOut class="size-4" /> Cerrar sesión</button
-          >
-        {/snippet}
-      </DropdownMenuItem>
-    </form>
+    <DropdownMenuItem onSelect={() => logoutForm?.requestSubmit()}>
+      <LogOut /> Cerrar sesión
+    </DropdownMenuItem>
   </DropdownMenuContent>
 </DropdownMenu>

@@ -10,6 +10,8 @@ describe('safeRedirectTo', () => {
   it('rechaza rutas externas', () => {
     expect(safeRedirectTo('https://evil.example')).toBeNull();
     expect(safeRedirectTo('//evil.example')).toBeNull();
+    expect(safeRedirectTo('/\\evil.example')).toBeNull();
+    expect(safeRedirectTo('/\nevil')).toBeNull();
   });
 
   it('rechaza vacío y relativas', () => {

@@ -1,19 +1,13 @@
-import type { Comment, Review, ReviewStatus } from '$lib/api/types';
-
-const STATUS_LABELS: Record<ReviewStatus, string> = {
-  draft: 'Borrador',
-  open: 'Abierta',
-  in_review: 'En revisión',
-  changes_requested: 'Requiere ajustes',
-  approved: 'Aprobada',
-  closed: 'Cerrada',
-};
+import type { Comment, Review } from '$lib/api/types';
+import { dueState } from './due';
+import { REVIEW_STATUS } from './labels';
 
 // Texto que `/design-review status` devuelve a Claude Code en la sesión de la feature.
 export function feedbackText(
   review: Review,
   comments: readonly Comment[],
   names: Record<string, string>,
+  now: Date,
 ): string {
   const name = (id: string): string => names[id] ?? id;
   const approved = review.screens.filter((s) => s.verdict === 'approved').length;
@@ -21,9 +15,9 @@ export function feedbackText(
   const pending = review.screens.filter((s) => s.verdict === 'pending').length;
 
   const lines = [`$ /design-review status ${review.id}`, ''];
-  lines.push(`${review.id} · ${review.card} · PR #${review.pr} · Ronda ${review.round}`);
+  lines.push(`${review.id} · ${review.card} · PR #${review.pr.number} · Ronda ${review.round}`);
   lines.push(
-    `Estado: ${STATUS_LABELS[review.status]} · revisa ${review.assignees.map(name).join(', ')} · ${review.due.label}`,
+    `Estado: ${REVIEW_STATUS[review.status].label} · revisa ${review.assignees.map(name).join(', ')} · ${dueState(review, now).label}`,
   );
   lines.push(
     `Pantallas: ${approved} aprobadas · ${changes.length} con ajuste · ${pending} sin veredicto`,

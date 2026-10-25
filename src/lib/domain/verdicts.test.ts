@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Round } from '$lib/api/types';
+import { makeRound } from '$lib/testing/factories';
 import { inheritedVerdict, nextRoundVerdicts, verdictCounts } from './verdicts';
 
 describe('verdictCounts', () => {
@@ -13,12 +13,7 @@ describe('verdictCounts', () => {
 });
 
 describe('inheritedVerdict', () => {
-  const prev: Round = {
-    n: 1,
-    by: 'u1',
-    when: 'Ayer',
-    verdicts: { a: 'approved', b: 'changes_requested' },
-  };
+  const prev = makeRound({ verdicts: { a: 'approved', b: 'changes_requested' } });
 
   it('devuelve el veredicto previo si existe', () => {
     expect(inheritedVerdict(prev, 'a')).toBe('approved');
@@ -31,12 +26,7 @@ describe('inheritedVerdict', () => {
 });
 
 describe('nextRoundVerdicts', () => {
-  const prev: Round = {
-    n: 1,
-    by: 'u1',
-    when: 'Ayer',
-    verdicts: { a: 'approved', b: 'changes_requested', c: 'approved' },
-  };
+  const prev = makeRound({ verdicts: { a: 'approved', b: 'changes_requested', c: 'approved' } });
 
   it('hereda salvo pantallas recapturadas, que vuelven a pending', () => {
     const out = nextRoundVerdicts(prev, ['a', 'b', 'c', 'd'], ['b', 'd']);

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { ScanEye } from '@lucide/svelte';
   import type { Snippet } from 'svelte';
 
   import {
@@ -22,18 +23,28 @@
 
 <div
   data-scroll
-  class="flex h-full min-h-0 flex-col items-center justify-center overflow-y-auto p-6"
+  class="flex h-dvh min-h-0 flex-col items-center justify-center gap-6 overflow-y-auto bg-muted/40 p-6"
 >
-  <Card class="w-full max-w-md">
+  <div class="flex items-center gap-2 text-sm font-semibold">
+    <span
+      class="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground"
+    >
+      <ScanEye class="size-4" />
+    </span>
+    QA Reviewer
+  </div>
+  <Card class="w-full max-w-sm">
     <CardHeader>
-      <CardTitle>{title}</CardTitle>
+      <CardTitle class="text-lg">{title}</CardTitle>
       {#if description}
         <CardDescription>{description}</CardDescription>
       {/if}
     </CardHeader>
     <CardContent>{@render children()}</CardContent>
     {#if footer}
-      <CardFooter>{@render footer()}</CardFooter>
+      <CardFooter class="justify-center text-sm text-muted-foreground"
+        >{@render footer()}</CardFooter
+      >
     {/if}
   </Card>
 </div>

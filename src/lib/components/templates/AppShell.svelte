@@ -1,67 +1,91 @@
 <script lang="ts">
-  import { PanelLeft } from '@lucide/svelte';
+  import { PanelLeftClose, PanelLeftOpen } from '@lucide/svelte';
   import { untrack, type Snippet } from 'svelte';
 
+  import { Button } from '$lib/components/atoms/button';
   import type { Crumb } from '$lib/components/molecules/nav';
+  import { cn } from '$lib/utils/cn';
 
   interface Props {
-    children: Snippet;
-    sidebar: Snippet;
+    /** Recibe `true` cuando la barra está colapsada (solo íconos). */
+    sidebar: Snippet<[boolean]>;
     topbar: Snippet;
     crumbs: Crumb[];
     collapsed?: boolean;
+    onToggle?: (collapsed: boolean) => void;
+    children: Snippet;
   }
 
-  let { children, sidebar, topbar, crumbs, collapsed = false }: Props = $props();
+  let { sidebar, topbar, crumbs, collapsed = false, onToggle, children }: Props = $props();
 
-  let open = $state(untrack(() => !collapsed));
+  // Estado local que parte de la preferencia guardada; el layout la persiste con onToggle.
+  let isCollapsed = $state(untrack(() => collapsed));
 
   function toggle() {
-    open = !open;
-    if (open) {
-      document.cookie = 'sidebar_collapsed=; Max-Age=0; Path=/';
-    } else {
-      document.cookie = 'sidebar_collapsed=1; Path=/';
-    }
+    isCollapsed = !isCollapsed;
+    onToggle?.(isCollapsed);
   }
 </script>
 
-<div class="flex h-full min-h-0">
-  {#if open}
-    <aside class="flex w-64 shrink-0 flex-col border-r bg-muted/40">
-      {@render sidebar()}
-    </aside>
-  {/if}
+<a
+  href="#contenido"
+  class="sr-only z-50 rounded-md bg-background px-3 py-2 text-sm font-medium focus:not-sr-only focus:fixed focus:top-2 focus:left-2"
+>
+  Saltar al contenido
+</a>
+
+<div class="flex h-dvh min-h-0 bg-background text-foreground">
+  <aside
+    class={cn(
+      'flex shrink-0 flex-col border-r bg-sidebar text-sidebar-foreground transition-[width] duration-200',
+      isCollapsed ? 'w-14' : 'w-60',
+    )}
+    aria-label="Navegación principal"
+  >
+    {@render sidebar(isCollapsed)}
+  </aside>
+
   <div class="flex min-w-0 flex-1 flex-col">
-    <header class="flex h-14 shrink-0 items-center gap-3 border-b px-4">
-      <button
+    <header class="flex h-14 shrink-0 items-center gap-2 border-b px-3">
+      <Button
         type="button"
-        class="text-muted-foreground transition-colors hover:text-foreground"
+        variant="ghost"
+        size="icon-sm"
         onclick={toggle}
-        aria-label="Alternar barra lateral"
+        aria-label={isCollapsed ? 'Expandir la barra lateral' : 'Colapsar la barra lateral'}
+        aria-expanded={!isCollapsed}
       >
-        <PanelLeft class="size-4" />
-      </button>
-      <nav aria-label="Migas de pan" class="flex items-center gap-1.5 text-sm">
-        {#each crumbs as crumb, i (crumb.href ?? crumb.label)}
-          {#if i > 0}
-            <span class="text-muted-foreground/60">/</span>
-          {/if}
-          {#if crumb.href}
-            <a
-              href={crumb.href}
-              class="text-muted-foreground transition-colors hover:text-foreground"
-            >
-              {crumb.label}
-            </a>
-          {:else}
-            <span class="font-medium text-foreground">{crumb.label}</span>
-          {/if}
-        {/each}
+        {#if isCollapsed}
+          <PanelLeftOpen />
+        {:else}
+          <PanelLeftClose />
+        {/if}
+      </Button>
+      <nav aria-label="Migas de pan" class="min-w-0 flex-1">
+        <ol class="flex min-w-0 items-center gap-1.5 text-sm">
+          {#each crumbs as crumb, i (i)}
+            {#if i > 0}
+              <li aria-hidden="true" class="text-muted-foreground/60">/</li>
+            {/if}
+            <li class="min-w-0 truncate">
+              {#if crumb.href}
+                <a
+                  href={crumb.href}
+                  class="text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  {crumb.label}
+                </a>
+              {:else}
+                <span class="font-medium text-foreground" aria-current="page">{crumb.label}</span>
+              {/if}
+            </li>
+          {/each}
+        </ol>
       </nav>
-      <div class="ml-auto flex items-center gap-2">{@render topbar()}</div>
+      <div class="flex shrink-0 items-center gap-1">{@render topbar()}</div>
     </header>
-    <main data-scroll class="min-h-0 flex-1 overflow-y-auto">
+
+    <main id="contenido" tabindex="-1" class="min-h-0 flex-1 overflow-hidden outline-none">
       {@render children()}
     </main>
   </div>

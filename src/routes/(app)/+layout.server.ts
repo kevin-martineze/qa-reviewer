@@ -1,57 +1,53 @@
-import { error } from '@sveltejs/kit';
 import type { LayoutServerLoad } from './$types';
-import type { Project } from '$lib/api/types';
-import { requireUser } from '$lib/server/guards';
-import { gateway, REVIEWS_SOURCE } from '$lib/server/gateway';
+import { gateway, isMock } from '$lib/server/gateway';
+import { requireUser, unwrap } from '$lib/server/guards';
+import { SIDEBAR_COOKIE } from '$lib/server/session';
 
-export const load: LayoutServerLoad = async ({ locals, cookies, depends }) => {
+export interface Person {
+  name: string;
+  email: string;
+  active: boolean;
+}
+
+export const load: LayoutServerLoad = async ({ locals, cookies, depends, fetch, url }) => {
   const user = requireUser(locals);
-  depends('app:session', 'notifications');
+  depends('app:session', 'app:notifications');
 
-  const g = gateway(locals);
+  const g = gateway(locals, fetch);
+  const [projectsResult, usersResult, unreadResult, recentResult, inboxResult] = await Promise.all([
+    g.directory.listProjects(),
+    g.directory.listUsers(),
+    g.notifications.unreadCount(),
+    g.notifications.list({}),
+    g.reviews.list({
+      assignee: user.id,
+      project: locals.projectId ?? undefined,
+      status: ['open', 'in_review'],
+      limit: 1,
+    }),
+  ]);
 
-  const projectsResult = await g.directory.listProjects();
-  if (!projectsResult.ok) {
-    throw error(projectsResult.error.status ?? 500, projectsResult.error.message);
-  }
-
-  let projects = projectsResult.data;
-  if (user.orgRole !== 'owner' && user.orgRole !== 'admin') {
-    const visible: Project[] = [];
-    for (const project of projects) {
-      const members = await g.directory.listMembers(project.id);
-      if (members.ok && members.data.some((m) => m.userId === user.id)) visible.push(project);
-    }
-    projects = visible;
-  }
-
-  const notificationsResult = await g.notifications.list();
-  if (!notificationsResult.ok) {
-    throw error(notificationsResult.error.status ?? 500, notificationsResult.error.message);
-  }
-  const notifications = notificationsResult.data;
-  const unread = notifications.filter((n) => n.unread).length;
-
-  const isMock = REVIEWS_SOURCE !== 'http';
-
-  let mockUsers: Array<{ id: string; name: string }> = [];
-  if (isMock) {
-    const usersResult = await g.directory.listUsers();
-    if (usersResult.ok) {
-      mockUsers = usersResult.data
-        .filter((u) => u.status === 'active')
-        .map((u) => ({ id: u.id, name: u.name }));
-    }
-  }
+  const projects = unwrap(projectsResult, url);
+  const users = unwrap(usersResult, url);
+  const people: Record<string, Person> = {};
+  for (const u of users)
+    people[u.id] = { name: u.name, email: u.email, active: u.status === 'active' };
 
   return {
+    /** Referencia de «ahora» para fechas relativas: la misma en el server y en el navegador. */
+    now: new Date().toISOString(),
     user,
     permissions: [...locals.permissions],
     projects,
-    notifications,
-    unread,
+    projectId: locals.projectId ?? projects[0]?.id ?? null,
+    people,
+    unread: unreadResult.ok ? unreadResult.data : 0,
+    inboxCount: inboxResult.ok ? inboxResult.data.pagination.total : 0,
+    recentNotifications: recentResult.ok ? recentResult.data.slice(0, 5) : [],
     isMock,
-    mockUsers,
-    collapsed: cookies.get('sidebar_collapsed') === '1',
+    mockUsers: isMock
+      ? users.filter((u) => u.status === 'active').map((u) => ({ id: u.id, name: u.name }))
+      : [],
+    sidebarCollapsed: cookies.get(SIDEBAR_COOKIE) === '1',
   };
 };

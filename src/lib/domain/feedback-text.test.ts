@@ -1,79 +1,44 @@
 import { describe, expect, it } from 'vitest';
-import type { Comment, Review } from '$lib/api/types';
+import { makeComment, makeReview, makeScreen } from '$lib/testing/factories';
 import { feedbackText } from './feedback-text';
 
-const review: Review = {
-  id: 'QR-0001',
-  title: 'Título',
-  context: 'ctx',
-  card: 'LIDER-1',
-  pr: 1,
-  base: 'main',
-  head: 'feat/x',
-  project: 'lideris',
-  module: 'Módulo',
-  author: 'u1',
-  assignees: ['u2'],
-  status: 'in_review',
-  round: 2,
-  priority: 'media',
-  due: { label: 'Mañana', tone: 'soon' },
-  updated: 'Hoy',
-  screens: [
-    {
-      key: 'a',
-      title: 'Pantalla A',
-      lead: '',
-      vp: '1280 × 720',
-      route: '/x',
-      img: null,
-      before: null,
-      elements: [],
-      changes: [],
-      questions: [],
-      verdict: 'approved',
-    },
-    {
-      key: 'b',
-      title: 'Pantalla B',
-      lead: '',
-      vp: '1280 × 720',
-      route: '/x',
-      img: null,
-      before: null,
-      elements: [],
-      changes: [],
-      questions: [],
-      verdict: 'changes_requested',
-    },
-  ],
-  rounds: [],
-  summary: { steps: [], rules: [] },
-  notCaptured: [],
-};
+const now = new Date('2026-10-25T20:00:00Z');
 
-const comment: Comment = {
-  id: 'c1',
-  review: 'QR-0001',
-  screen: 'b',
-  round: 1,
-  author: 'u2',
-  when: 'Ayer',
-  body: 'Revisa el contraste.',
-  anchor: null,
-  el: null,
-  resolved: false,
-  followUp: null,
-  replies: [],
-};
+const review = makeReview({
+  round: 2,
+  screens: [
+    makeScreen({ key: 'a', title: 'Pantalla A', verdict: 'approved' }),
+    makeScreen({ key: 'b', title: 'Pantalla B', verdict: 'changes_requested' }),
+  ],
+});
 
 describe('feedbackText', () => {
   it('incluye estado, ajustes y comentarios abiertos', () => {
-    const text = feedbackText(review, [comment], { u1: 'Kevin', u2: 'Laura' });
+    const comment = makeComment({ screen: 'b', body: 'Revisa el contraste.' });
+    const text = feedbackText(review, [comment], { u1: 'Kevin', u2: 'Laura' }, now);
     expect(text).toContain('$ /design-review status QR-0001');
+    expect(text).toContain('QR-0001 · LIDER-1 · PR #1 · Ronda 2');
+    expect(text).toContain('Estado: En revisión · revisa Laura · Mañana');
     expect(text).toContain('Pantallas: 1 aprobadas · 1 con ajuste · 0 sin veredicto');
-    expect(text).toContain('Ajuste pedido en');
     expect(text).toContain('b · Pantalla B');
+    expect(text).toContain('de la ronda 1, diseño aún no confirma');
     expect(text).toContain('Laura: «Revisa el contraste.»');
+  });
+
+  it('incluye archivo, línea y selector cuando el pin apunta a un componente', () => {
+    const comment = makeComment({
+      screen: 'b',
+      round: 2,
+      el: { name: 'itemRow · Card', file: 'src/Row.svelte', line: 316, selector: '.card' },
+    });
+    const text = feedbackText(review, [comment], {}, now);
+    expect(text).toContain('nuevo en la ronda 2');
+    expect(text).toContain('src/Row.svelte:316');
+    expect(text).toContain('itemRow · Card · .card');
+  });
+
+  it('omite los resueltos', () => {
+    const text = feedbackText(review, [makeComment({ resolved: true })], {}, now);
+    expect(text).toContain('Comentarios abiertos (0)');
   });
 });

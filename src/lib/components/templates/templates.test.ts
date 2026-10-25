@@ -187,40 +187,52 @@ describe('DashboardTemplate', () => {
 });
 
 describe('AppShell', () => {
-  it('dibuja migas, sidebar, topbar y contenido con un solo scroll', () => {
+  const sidebar = createRawSnippet((collapsed: () => boolean) => ({
+    render: () => `<div data-testid="sidebar" data-collapsed="${collapsed()}">nav</div>`,
+  }));
+
+  it('dibuja migas, sidebar, topbar y contenido; el scroll lo pone el template de la página', () => {
     const el = createTarget();
     mounted.push(
       mount(AppShell, {
         target: el,
         props: {
-          sidebar: raw('<div data-testid="sidebar">nav</div>'),
+          sidebar,
           topbar: raw('<div data-testid="topbar">acciones</div>'),
           crumbs: [{ label: 'Revisión', href: '/reviews' }, { label: 'QR-0012' }],
           children: body(),
         },
       }),
     );
-    expect(el.querySelector('[data-testid="sidebar"]')).not.toBeNull();
+    expect(el.querySelector('[data-testid="sidebar"]')?.getAttribute('data-collapsed')).toBe(
+      'false',
+    );
     expect(el.querySelector('[data-testid="topbar"]')).not.toBeNull();
-    expect(el.textContent).toContain('QR-0012');
+    expect(el.querySelector('[aria-current="page"]')?.textContent).toContain('QR-0012');
     expect(el.querySelector('[data-testid="body"]')).not.toBeNull();
-    expect(scrollCount(el)).toBe(1);
+    expect(scrollCount(el)).toBe(0);
   });
 
-  it('esconde el sidebar cuando arranca colapsado', () => {
+  it('arranca colapsado y avisa al alternar', () => {
     const el = createTarget();
+    const calls: boolean[] = [];
     mounted.push(
       mount(AppShell, {
         target: el,
         props: {
-          sidebar: raw('<div data-testid="sidebar">nav</div>'),
+          sidebar,
           topbar: raw('<div>acciones</div>'),
           crumbs: [],
           collapsed: true,
+          onToggle: (value: boolean) => calls.push(value),
           children: body(),
         },
       }),
     );
-    expect(el.querySelector('[data-testid="sidebar"]')).toBeNull();
+    expect(el.querySelector('[data-testid="sidebar"]')?.getAttribute('data-collapsed')).toBe(
+      'true',
+    );
+    el.querySelector<HTMLButtonElement>('button[aria-expanded]')?.click();
+    expect(calls).toEqual([false]);
   });
 });

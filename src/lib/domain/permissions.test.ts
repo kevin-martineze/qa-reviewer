@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { can, permissionGrantedBy, permissionLabel, permissionsOf } from './permissions';
+import type { SessionUser } from '$lib/api/types';
+import {
+  can,
+  permissionGrantedBy,
+  permissionLabel,
+  permissionsFor,
+  permissionsOf,
+  visibleProjectIds,
+} from './permissions';
 
 describe('permissionsOf', () => {
   it('owner suma project_admin implícito', () => {
@@ -72,5 +80,37 @@ describe('permissionGrantedBy', () => {
   it('nombra ambos cuando los dos pueden', () => {
     expect(permissionGrantedBy('projects:configure')).toContain('admin de la organización');
     expect(permissionGrantedBy('projects:configure')).toContain('project_admin');
+  });
+});
+
+describe('permissionsFor y visibleProjectIds', () => {
+  const user: SessionUser = {
+    id: 'u3',
+    name: 'Andrés',
+    email: 'a@ejemplo.co',
+    orgRole: 'member',
+    status: 'active',
+    memberships: [
+      { projectId: 'lideris', role: 'designer' },
+      { projectId: 'auralis', role: 'developer' },
+    ],
+  };
+
+  it('usa el rol del proyecto pedido', () => {
+    expect(permissionsFor(user, 'lideris').has('verdicts:set')).toBe(true);
+    expect(permissionsFor(user, 'auralis').has('verdicts:set')).toBe(false);
+    expect(permissionsFor(user, 'auralis').has('tokens:own')).toBe(true);
+  });
+
+  it('sin membresía solo quedan los permisos de la organización', () => {
+    expect(permissionsFor(user, 'otro').has('reviews:read')).toBe(false);
+  });
+
+  it('member ve solo sus proyectos; admin ve todos', () => {
+    expect(visibleProjectIds(user, ['lideris', 'auralis', 'otro'])).toEqual(['lideris', 'auralis']);
+    expect(visibleProjectIds({ ...user, orgRole: 'admin' }, ['lideris', 'otro'])).toEqual([
+      'lideris',
+      'otro',
+    ]);
   });
 });

@@ -18,7 +18,7 @@
   <div class="flex items-center justify-between gap-2 px-4 py-3">
     <div class="min-w-0">
       <p class="truncate text-sm font-medium">{data.screen.title}</p>
-      <p class="text-xs text-muted-foreground">{data.screen.vp} · {data.screen.route}</p>
+      <p class="text-xs text-muted-foreground">{data.screen.viewport} · {data.screen.route}</p>
     </div>
     <a
       href={resolve('/(app)/reviews/[id]/(detail)', { id: data.review.id })}

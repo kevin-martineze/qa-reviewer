@@ -1,14 +1,18 @@
 <script lang="ts">
-  import { untrack, type Snippet } from 'svelte';
+  import { ScanEye } from '@lucide/svelte';
+  import type { Snippet } from 'svelte';
 
-  import { page } from '$app/state';
   import type { LayoutData } from './$types';
 
-  import SidebarNav from '$lib/components/organisms/shell/SidebarNav.svelte';
-  import ProjectSelector from '$lib/components/organisms/shell/ProjectSelector.svelte';
+  import { page } from '$app/state';
+
   import NotificationBell from '$lib/components/organisms/shell/NotificationBell.svelte';
+  import ProjectSelector from '$lib/components/organisms/shell/ProjectSelector.svelte';
+  import SidebarNav from '$lib/components/organisms/shell/SidebarNav.svelte';
   import UserMenu from '$lib/components/organisms/shell/UserMenu.svelte';
   import AppShell from '$lib/components/templates/AppShell.svelte';
+  import { PROJECT_ROLE } from '$lib/domain/labels';
+  import { projectRoleOf } from '$lib/domain/permissions';
 
   interface Props {
     data: LayoutData;
@@ -17,27 +21,43 @@
 
   let { data, children }: Props = $props();
 
-  let currentProjectId = $state(untrack(() => data.projects[0]?.id ?? 'lideris'));
-
   const crumbs = $derived(page.data.meta?.crumbs ?? []);
+  const now = $derived(new Date(data.now));
+  const role = $derived(data.projectId ? projectRoleOf(data.user, data.projectId) : undefined);
+  const roleLabel = $derived(
+    role ? PROJECT_ROLE[role].label : data.user.orgRole === 'member' ? 'Sin rol' : 'Admin',
+  );
+
+  function persistSidebar(collapsed: boolean) {
+    document.cookie = `qa_sidebar=${collapsed ? '1' : '0'}; Path=/; Max-Age=31536000; SameSite=Lax`;
+  }
 </script>
 
-{#snippet sidebar()}
-  <div class="space-y-2 p-2">
-    <ProjectSelector
-      projects={data.projects}
-      currentId={currentProjectId}
-      onSelect={(id) => (currentProjectId = id)}
-    />
-    <SidebarNav permissions={data.permissions} {currentProjectId} />
+{#snippet sidebar(collapsed: boolean)}
+  <div class="flex h-14 shrink-0 items-center gap-2 border-b px-4">
+    <span
+      class="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground"
+    >
+      <ScanEye class="size-4" />
+    </span>
+    {#if !collapsed}<span class="text-sm font-semibold">QA Reviewer</span>{/if}
   </div>
+  <div class="p-2">
+    <ProjectSelector projects={data.projects} currentId={data.projectId} {collapsed} />
+  </div>
+  <SidebarNav
+    permissions={data.permissions}
+    projectId={data.projectId}
+    {collapsed}
+    inboxCount={data.inboxCount}
+  />
 {/snippet}
 
 {#snippet topbar()}
-  <NotificationBell notifications={data.notifications} unread={data.unread} />
-  <UserMenu user={data.user} isMock={data.isMock} mockUsers={data.mockUsers} />
+  <NotificationBell recent={data.recentNotifications} unread={data.unread} {now} />
+  <UserMenu user={data.user} {roleLabel} isMock={data.isMock} mockUsers={data.mockUsers} />
 {/snippet}
 
-<AppShell {sidebar} {topbar} {crumbs} collapsed={data.collapsed}>
+<AppShell {sidebar} {topbar} {crumbs} collapsed={data.sidebarCollapsed} onToggle={persistSidebar}>
   {@render children()}
 </AppShell>

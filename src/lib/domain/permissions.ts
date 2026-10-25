@@ -1,4 +1,4 @@
-import type { OrgRole, ProjectRole } from '$lib/api/types';
+import type { OrgRole, ProjectRole, SessionUser } from '$lib/api/types';
 
 export type Permission =
   | 'org:manage'
@@ -97,6 +97,23 @@ export function permissionsOf(orgRole: OrgRole, projectRole?: ProjectRole): Set<
     if (def.roles.some((r) => roles.has(r))) set.add(def.key);
   }
   return set;
+}
+
+/** Rol efectivo del usuario en un proyecto (owner y admin cuentan como project_admin). */
+export function projectRoleOf(user: SessionUser, projectId: string): ProjectRole | undefined {
+  return user.memberships.find((m) => m.projectId === projectId)?.role;
+}
+
+/** Permisos del usuario dentro de un proyecto concreto. */
+export function permissionsFor(user: SessionUser, projectId: string | null): Set<string> {
+  return permissionsOf(user.orgRole, projectId ? projectRoleOf(user, projectId) : undefined);
+}
+
+/** Proyectos que el usuario puede abrir: todos para owner y admin, si no los suyos. */
+export function visibleProjectIds(user: SessionUser, allProjectIds: readonly string[]): string[] {
+  if (user.orgRole === 'owner' || user.orgRole === 'admin') return [...allProjectIds];
+  const mine = new Set(user.memberships.map((m) => m.projectId));
+  return allProjectIds.filter((id) => mine.has(id));
 }
 
 export function can(permissions: ReadonlySet<string>, permission: Permission): boolean {

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import '../app.css';
   import '@fontsource-variable/geist';
   import '@fontsource-variable/geist-mono';
   import type { Snippet } from 'svelte';
@@ -6,6 +7,7 @@
 
   import { page } from '$app/state';
   import { Toaster } from '$lib/components/atoms/sonner';
+  import { TooltipProvider } from '$lib/components/atoms/tooltip';
 
   interface Props {
     children: Snippet;
@@ -19,6 +21,8 @@
   <title>{title ? `${title} · QA Reviewer` : 'QA Reviewer'}</title>
 </svelte:head>
 
-{@render children()}
+<TooltipProvider delayDuration={300}>
+  {@render children()}
+</TooltipProvider>
 <ModeWatcher />
 <Toaster />
