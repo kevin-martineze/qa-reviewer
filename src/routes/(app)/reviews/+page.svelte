@@ -30,6 +30,7 @@
   {:else if hasFilters(data.query)}
     <EmptyState
       title="Nada coincide con los filtros"
+      illustration="empty-reviews"
       description="Prueba con otra búsqueda o quita algún filtro."
     >
       {#snippet action()}
@@ -47,6 +48,7 @@
   {:else}
     <EmptyState
       title="No hay revisiones en esta vista"
+      illustration="empty-approved"
       description="Cuando la skill /design-review suba un cambio, aparecerá aquí."
     />
   {/if}

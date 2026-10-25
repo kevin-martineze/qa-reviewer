@@ -25,7 +25,10 @@ export default defineConfig({
   ],
   webServer: {
     command: `pnpm vite dev --port ${PORT} --strictPort`,
-    port: PORT,
+    // Espera a que /login responda (no solo el puerto): así la primera compilación
+    // en frío de Vite no se come el timeout del primer test.
+    url: `http://localhost:${PORT}/login`,
+    timeout: 120_000,
     // Server nuevo en cada corrida: el mock arranca siempre con las mismas semillas.
     reuseExistingServer: false,
     env: { REVIEWS_SOURCE: 'mock' },

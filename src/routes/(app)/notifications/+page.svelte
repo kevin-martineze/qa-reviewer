@@ -32,11 +32,17 @@
     all: {
       title: 'Sin notificaciones',
       description: 'Aquí verás asignaciones, rondas, menciones y respuestas.',
+      illustration: 'empty-notifications',
     },
-    unread: { title: 'Estás al día', description: 'No tienes notificaciones sin leer.' },
+    unread: {
+      title: 'Estás al día',
+      description: 'No tienes notificaciones sin leer.',
+      illustration: 'empty-approved',
+    },
     mentions: {
       title: 'Nadie te ha mencionado',
       description: 'Cuando alguien escriba @tu-nombre en un comentario, aparecerá aquí.',
+      illustration: 'empty-comments',
     },
   } as const;
 
@@ -112,6 +118,10 @@
       {/each}
     </div>
   {:else}
-    <EmptyState title={EMPTY[data.tab].title} description={EMPTY[data.tab].description} />
+    <EmptyState
+      title={EMPTY[data.tab].title}
+      description={EMPTY[data.tab].description}
+      illustration={EMPTY[data.tab].illustration}
+    />
   {/if}
 </ListTemplate>

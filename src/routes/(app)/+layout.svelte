@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { ScanEye } from '@lucide/svelte';
   import type { Snippet } from 'svelte';
 
   import type { LayoutData } from './$types';
@@ -7,6 +6,7 @@
   import { page } from '$app/state';
 
   import { toast } from '$lib/components/atoms/sonner';
+  import BrandMark from '$lib/components/molecules/BrandMark.svelte';
   import NotificationBell from '$lib/components/organisms/shell/NotificationBell.svelte';
   import ProjectSelector from '$lib/components/organisms/shell/ProjectSelector.svelte';
   import SidebarNav from '$lib/components/organisms/shell/SidebarNav.svelte';
@@ -45,11 +45,7 @@
 
 {#snippet sidebar(collapsed: boolean)}
   <div class="flex h-14 shrink-0 items-center gap-2 border-b px-4">
-    <span
-      class="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground"
-    >
-      <ScanEye class="size-4" />
-    </span>
+    <BrandMark />
     {#if !collapsed}<span class="text-sm font-semibold">QA Reviewer</span>{/if}
   </div>
   <div class="p-2">

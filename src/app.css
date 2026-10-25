@@ -82,6 +82,9 @@
   --viz-1: #2a78d6;
   --viz-2: #eb6834;
   --viz-critical: #d03b3b;
+
+  /* Marca: el azul del logo y las ilustraciones (static/illustrations). */
+  --brand: #2a78d6;
 }
 
 .dark {
@@ -141,9 +144,12 @@
   --viz-1: #3987e5;
   --viz-2: #d95926;
   --viz-critical: #d03b3b;
+
+  --brand: #3987e5;
 }
 
 @theme inline {
+  --color-brand: var(--brand);
   --color-viz-1: var(--viz-1);
   --color-viz-2: var(--viz-2);
   --color-viz-critical: var(--viz-critical);

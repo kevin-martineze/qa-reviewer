@@ -68,7 +68,7 @@
       {/each}
     </ul>
   {:else}
-    <EmptyState title="Esta revisión no tiene pantallas" />
+    <EmptyState title="Esta revisión no tiene pantallas" illustration="empty-reviews" />
   {/if}
 
   {#if review.notCaptured.length}

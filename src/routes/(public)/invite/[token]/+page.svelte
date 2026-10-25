@@ -9,6 +9,7 @@
   import { Button, buttonVariants } from '$lib/components/atoms/button';
   import { Input } from '$lib/components/atoms/input';
   import FormField from '$lib/components/molecules/FormField.svelte';
+  import Illustration from '$lib/components/molecules/Illustration.svelte';
   import Notice from '$lib/components/molecules/Notice.svelte';
   import PasswordInput from '$lib/components/molecules/PasswordInput.svelte';
   import { ORG_ROLE } from '$lib/domain/labels';
@@ -111,6 +112,7 @@
   </div>
 {:else}
   <div class="space-y-4">
+    <Illustration name="link-expired" class="mx-auto w-32" />
     <Notice tone="warning">{STATUS_TEXT[data.invite.status]}</Notice>
     <a href={resolve('/login')} class={cn(buttonVariants({ variant: 'outline' }), 'w-full')}>
       Ir a iniciar sesión

@@ -436,6 +436,7 @@
       {:else if !pending}
         <EmptyState
           title="Sin comentarios"
+          illustration="empty-comments"
           description={data.can.comment
             ? 'Pulsa C y haz clic en la captura para comentar un componente.'
             : undefined}

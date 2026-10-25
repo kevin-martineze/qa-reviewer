@@ -59,6 +59,7 @@
   {:else if canCreate}
     <EmptyState
       title="Sin tokens"
+      illustration="token-cli"
       description="Crea uno para conectar la skill desde tu equipo."
       class="py-10"
     >

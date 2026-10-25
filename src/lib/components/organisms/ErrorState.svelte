@@ -1,16 +1,9 @@
 <script lang="ts">
-  import {
-    ArchiveX,
-    Check,
-    Copy,
-    FileQuestion,
-    ServerCrash,
-    ShieldX,
-    TriangleAlert,
-  } from '@lucide/svelte';
+  import { Check, Copy } from '@lucide/svelte';
   import type { Snippet } from 'svelte';
 
   import { buttonVariants } from '$lib/components/atoms/button';
+  import Illustration from '$lib/components/molecules/Illustration.svelte';
   import { permissionLabel } from '$lib/domain/permissions';
   import { cn } from '$lib/utils/cn';
 
@@ -53,14 +46,12 @@
   );
 
   const COPY = {
-    forbidden: { title: 'No tienes acceso', icon: ShieldX },
-    not_found: { title: 'No encontramos esto', icon: FileQuestion },
-    gone: { title: 'Ya no está disponible', icon: ArchiveX },
-    unavailable: { title: 'Servicio no disponible', icon: ServerCrash },
-    error: { title: 'Algo salió mal', icon: TriangleAlert },
+    forbidden: { title: 'No tienes acceso', illustration: 'error-403' },
+    not_found: { title: 'No encontramos esto', illustration: 'error-404' },
+    gone: { title: 'Ya no está disponible', illustration: 'link-expired' },
+    unavailable: { title: 'Servicio no disponible', illustration: 'error-500' },
+    error: { title: 'Algo salió mal', illustration: 'error-500' },
   } as const;
-
-  const Icon = $derived(COPY[kind].icon);
 
   const hint = $derived.by(() => {
     if (kind === 'forbidden') {
@@ -95,11 +86,7 @@
     className,
   )}
 >
-  <span
-    class="flex size-12 items-center justify-center rounded-full bg-muted text-muted-foreground"
-  >
-    <Icon class="size-6" />
-  </span>
+  <Illustration name={COPY[kind].illustration} class="mb-1 w-48" />
   <p class="text-xs font-medium text-muted-foreground tabular-nums">Error {status}</p>
   <h1 class="text-lg font-semibold">{COPY[kind].title}</h1>
   <p class="max-w-md text-sm text-muted-foreground">{message}</p>

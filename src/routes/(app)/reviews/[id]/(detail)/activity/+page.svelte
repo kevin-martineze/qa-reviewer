@@ -53,6 +53,7 @@
 {:else}
   <EmptyState
     title="Sin actividad"
+    illustration="empty-comments"
     description="Aquí queda el historial de rondas, veredictos y comentarios."
   />
 {/if}

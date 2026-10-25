@@ -87,10 +87,10 @@ Reglas de dependencia:
 src/lib/components/
 ├── ui/              shadcn-svelte (no editar, no importar fuera de atoms/)
 ├── atoms/           re-export de ui/* con overrides de marca (Table con scroll-x-hint)
-├── molecules/       AvatarStack, ChartLegend, ConfirmDialog, CopyButton, EmptyState, FilterSelect,
-│                    FormField, FormSelect, AutoSubmitSelect, NavTabs, Notice, PageHeader, Pagination,
-│                    PasswordInput, ProgressMeter, SettingsSection, StatTile, SwitchField, ToneBadge,
-│                    UserAvatar
+├── molecules/       AvatarStack, BrandHero, BrandMark, ChartLegend, ConfirmDialog, CopyButton,
+│                    EmptyState, FilterSelect, FormField, FormSelect, AutoSubmitSelect, Illustration,
+│                    NavTabs, Notice, PageHeader, Pagination, PasswordInput, ProgressMeter,
+│                    SettingsSection, StatTile, SwitchField, ToneBadge, UserAvatar
 ├── organisms/
 │   ├── shell/       SidebarNav, ProjectSelector, NotificationBell, UserMenu
 │   ├── reviews/     ReviewRow, ReviewsTable, ReviewFiltersBar
@@ -117,6 +117,8 @@ El árbol de rutas está en [layouts.md](layouts.md#árbol-de-rutas).
 - **Atajos del visor**: `A` aprobar, `R` pedir ajuste (pulsar el activo lo devuelve a pendiente), `C` comentar, `I` inspector, `D` diff, `←`/`→` o `J`/`K` pantallas, `T` alternar en modo «Alternar», `Esc` cancelar. Se ignoran dentro de inputs y con un diálogo abierto.
 - **Fechas**: zona fija America/Bogotá y texto armado a mano («20 oct», «4:58 p. m.»), para que server y navegador pinten lo mismo. `now` llega del layout.
 - **Gráficos**: paleta validada con la skill dataviz (categórica `viz-1`/`viz-2`, crítico `viz-critical`, en claro y oscuro), sin doble eje, tooltip en hover y foco, y tabla equivalente.
+- **Ilustraciones**: `static/illustrations/*.webp` (fondo transparente, 560 px de ancho como máximo) vía `<Illustration name>` o `EmptyState illustration=`. Solo en estados de página completa y en `ErrorState` (403, 404, 410 y 5xx); las tarjetas chicas siguen con ícono. Son decorativas (`alt=""`): el título dice lo que pasa. Generadas con Gemini con un estilo común (vector plano, slate + `brand` #2a78d6 + acento #eb6834); al agregar una, registra sus dimensiones en `molecules/illustrations.ts`.
+- **Marca**: `BrandMark` (isotipo SVG con tokens `foreground`/`brand`, igual que `static/favicon.svg`), `BrandHero` en el panel lateral de las pantallas públicas (≥ `lg`) y `static/brand/og.jpg` (1200×630) como vista previa de los enlaces.
 - **Accesibilidad**: el veredicto nunca se comunica solo con color (texto + ícono); cada gráfico tiene su tabla.
 
 ## Contrato de tipos
