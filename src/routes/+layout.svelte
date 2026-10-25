@@ -9,6 +9,7 @@
   import { page } from '$app/state';
   import { Toaster } from '$lib/components/atoms/sonner';
   import { TooltipProvider } from '$lib/components/atoms/tooltip';
+  import DesktopOnly from '$lib/components/molecules/DesktopOnly.svelte';
 
   interface Props {
     children: Snippet;
@@ -35,7 +36,13 @@
 </svelte:head>
 
 <TooltipProvider delayDuration={300}>
-  {@render children()}
+  <!-- Bajo lg (1024 px) no hay pantallas: solo el aviso. CSS puro, sin JS, para que el SSR no parpadee. -->
+  <div class="lg:hidden">
+    <DesktopOnly />
+  </div>
+  <div class="hidden lg:contents">
+    {@render children()}
+  </div>
 </TooltipProvider>
 <!-- Claro por defecto; quien elija oscuro o «sistema» en el menú lo conserva (localStorage). -->
 <ModeWatcher defaultMode="light" />
