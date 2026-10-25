@@ -6,6 +6,7 @@
 
   import { page } from '$app/state';
 
+  import { toast } from '$lib/components/atoms/sonner';
   import NotificationBell from '$lib/components/organisms/shell/NotificationBell.svelte';
   import ProjectSelector from '$lib/components/organisms/shell/ProjectSelector.svelte';
   import SidebarNav from '$lib/components/organisms/shell/SidebarNav.svelte';
@@ -13,6 +14,7 @@
   import AppShell from '$lib/components/templates/AppShell.svelte';
   import { PROJECT_ROLE } from '$lib/domain/labels';
   import { projectRoleOf } from '$lib/domain/permissions';
+  import { formFeedback } from '$lib/utils/form-feedback';
 
   interface Props {
     data: LayoutData;
@@ -27,6 +29,14 @@
   const roleLabel = $derived(
     role ? PROJECT_ROLE[role].label : data.user.orgRole === 'member' ? 'Sin rol' : 'Admin',
   );
+
+  // Resultado de cualquier form action de la app: un toast, sin código en cada página.
+  $effect(() => {
+    const feedback = formFeedback(page.form);
+    if (!feedback) return;
+    if (feedback.kind === 'error') toast.error(feedback.text);
+    else toast.success(feedback.text);
+  });
 
   function persistSidebar(collapsed: boolean) {
     document.cookie = `qa_sidebar=${collapsed ? '1' : '0'}; Path=/; Max-Age=31536000; SameSite=Lax`;

@@ -3,3 +3,4 @@
  * NO importar desde `$lib/components/ui/sonner` directo.
  */
 export * from '$lib/components/ui/sonner';
+export { toast } from 'svelte-sonner';

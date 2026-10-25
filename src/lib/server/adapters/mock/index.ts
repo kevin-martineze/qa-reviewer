@@ -314,6 +314,7 @@ export function mockGateway(locals: App.Locals): Gateways {
         const round = review.rounds.find((r) => r.n === review.round);
         if (round) round.submission = null;
         review.status = 'in_review';
+        review.pr.check = 'pending';
         touch(review);
         logActivity('review_reopened', me.id, review.id, `anuló el envío: «${reason}»`);
         notify(review.author, 'review_submitted', me.id, `${me.name} reabrió ${review.id}`, {
