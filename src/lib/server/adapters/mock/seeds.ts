@@ -553,6 +553,158 @@ function round1(
 
 const keys = (n: number) => Array.from({ length: n }, (_, i) => String.fromCharCode(97 + i));
 
+/* Revisiones viejas de Lideris: dan volumen al listado (paginación, filtros, métricas). */
+interface HistorySeed {
+  id: string;
+  title: string;
+  module: string;
+  card: string;
+  pr: number;
+  author: string;
+  assignee: string;
+  days: number;
+  rounds: 1 | 2;
+  status: 'approved' | 'closed';
+  kinds: GenericKind[];
+}
+
+function historyReview(h: HistorySeed): Review {
+  const created = ago(h.days * DAY);
+  const screens = genericScreens(
+    h.id,
+    h.module,
+    {},
+    h.kinds.map((kind, i) => ({ title: `${h.module} · vista ${i + 1}`, kind })),
+  ).map((s) => ({ ...s, verdict: 'approved' as const, changedIn: h.rounds }));
+  const all = keys(screens.length);
+  const approvedAll = {
+    by: h.assignee,
+    result: 'approved' as const,
+    approved: screens.length,
+    changes: 0,
+    body: null,
+  };
+  const rounds: Round[] =
+    h.rounds === 1
+      ? round1(h.author, created, all, { ...approvedAll, createdAt: ago((h.days - 1) * DAY) })
+      : [
+          {
+            n: 1,
+            by: h.author,
+            createdAt: created,
+            note: null,
+            changed: all,
+            verdicts: {},
+            submission: {
+              by: h.assignee,
+              createdAt: ago((h.days - 1) * DAY),
+              result: 'changes_requested',
+              approved: screens.length - 1,
+              changes: 1,
+              body: 'Un ajuste de espaciado en la primera vista.',
+            },
+          },
+          {
+            n: 2,
+            by: h.author,
+            createdAt: ago((h.days - 2) * DAY),
+            note: 'Espaciado corregido.',
+            changed: ['a'],
+            verdicts: Object.fromEntries(all.slice(1).map((k) => [k, 'approved' as const])),
+            submission: { ...approvedAll, createdAt: ago((h.days - 3) * DAY) },
+          },
+        ];
+  return {
+    id: h.id,
+    title: h.title,
+    context: `${h.module} · ${h.title.toLowerCase()}`,
+    card: h.card,
+    pr: pr(h.pr, `feat/${h.card}`, h.status === 'closed' ? 'merged' : 'open', 'success'),
+    project: 'lideris',
+    module: h.module,
+    author: h.author,
+    assignees: [h.assignee],
+    status: h.status,
+    round: h.rounds,
+    priority: 'medium',
+    dueAt: null,
+    createdAt: created,
+    updatedAt: ago((h.days - (h.rounds === 1 ? 1 : 3)) * DAY),
+    screens,
+    rounds,
+    summary: { steps: [], rules: [] },
+    notCaptured: [],
+  };
+}
+
+const HISTORY: HistorySeed[] = [
+  {
+    id: 'QR-0005',
+    title: 'Filtros del listado de proveedores',
+    module: 'Proveedores',
+    card: 'LIDER-571',
+    pr: 802,
+    author: 'u5',
+    assignee: 'u3',
+    days: 18,
+    rounds: 2,
+    status: 'closed',
+    kinds: ['list', 'dialog'],
+  },
+  {
+    id: 'QR-0004',
+    title: 'Agenda semanal de citas',
+    module: 'Citas',
+    card: 'LIDER-548',
+    pr: 795,
+    author: 'u1',
+    assignee: 'u4',
+    days: 22,
+    rounds: 1,
+    status: 'closed',
+    kinds: ['list', 'detail', 'form'],
+  },
+  {
+    id: 'QR-0003',
+    title: 'Detalle de la orden de compra',
+    module: 'Compras',
+    card: 'LIDER-540',
+    pr: 781,
+    author: 'u5',
+    assignee: 'u2',
+    days: 27,
+    rounds: 2,
+    status: 'closed',
+    kinds: ['detail'],
+  },
+  {
+    id: 'QR-0002',
+    title: 'Caja menor: registro de gastos',
+    module: 'Caja menor',
+    card: 'LIDER-546',
+    pr: 770,
+    author: 'u1',
+    assignee: 'u3',
+    days: 33,
+    rounds: 1,
+    status: 'approved',
+    kinds: ['form', 'list'],
+  },
+  {
+    id: 'QR-0001',
+    title: 'Listado de bancos',
+    module: 'Pagos',
+    card: 'LIDER-485',
+    pr: 742,
+    author: 'u5',
+    assignee: 'u4',
+    days: 41,
+    rounds: 1,
+    status: 'closed',
+    kinds: ['list'],
+  },
+];
+
 export const SEED_REVIEWS: Review[] = [
   {
     id: 'QR-0012',
@@ -854,6 +1006,7 @@ export const SEED_REVIEWS: Review[] = [
     summary: { steps: [], rules: [] },
     notCaptured: [],
   },
+  ...HISTORY.map(historyReview),
 ];
 
 /* ── Comentarios ─────────────────────────────────────────────────────── */

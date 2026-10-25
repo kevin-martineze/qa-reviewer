@@ -194,3 +194,17 @@
     font-variant-numeric: tabular-nums;
   }
 }
+
+/* Sombra en el borde cuando una tabla tiene contenido desplazable a los lados.
+   Las capas `local` tapan la sombra cuando no hay más contenido de ese lado. */
+@utility scroll-x-hint {
+  background:
+    linear-gradient(to right, var(--color-background) 30%, transparent) left / 2.5rem 100% no-repeat
+      local,
+    linear-gradient(to left, var(--color-background) 30%, transparent) right / 2.5rem 100% no-repeat
+      local,
+    radial-gradient(farthest-side at 0 50%, hsl(var(--foreground) / 0.12), transparent) left /
+      0.75rem 100% no-repeat scroll,
+    radial-gradient(farthest-side at 100% 50%, hsl(var(--foreground) / 0.12), transparent) right /
+      0.75rem 100% no-repeat scroll;
+}

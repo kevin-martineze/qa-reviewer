@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { tick } from 'svelte';
+
   import type { PageData } from './$types';
 
   import { enhance } from '$app/forms';
@@ -25,9 +27,14 @@
   let password = $state('');
   let submitting = $state(false);
 
-  function useDemo(account: string) {
+  let formEl = $state<HTMLFormElement | null>(null);
+
+  /** Mock: un clic en la cuenta entra directo. */
+  async function useDemo(account: string) {
     email = account;
     password = data.demo?.password ?? '';
+    await tick();
+    formEl?.requestSubmit();
   }
 </script>
 
@@ -40,6 +47,7 @@
   {/if}
 
   <form
+    bind:this={formEl}
     method="post"
     class="space-y-4"
     novalidate
@@ -99,7 +107,7 @@
   {#if data.demo}
     <section class="space-y-2 rounded-md border border-dashed p-3" aria-labelledby="demo-title">
       <div class="flex items-baseline justify-between">
-        <h2 id="demo-title" class="text-xs font-medium">Cuentas de prueba (mock)</h2>
+        <h2 id="demo-title" class="text-xs font-medium">Entrar como (mock)</h2>
         <span class="text-xs text-muted-foreground">Contraseña: {data.demo.password}</span>
       </div>
       <ul class="space-y-1">

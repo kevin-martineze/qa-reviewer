@@ -1,13 +1,8 @@
 import type { LayoutServerLoad } from './$types';
+import type { People } from '$lib/domain/people';
 import { gateway, isMock } from '$lib/server/gateway';
 import { requireUser, unwrap } from '$lib/server/guards';
 import { SIDEBAR_COOKIE } from '$lib/server/session';
-
-export interface Person {
-  name: string;
-  email: string;
-  active: boolean;
-}
 
 export const load: LayoutServerLoad = async ({ locals, cookies, depends, fetch, url }) => {
   const user = requireUser(locals);
@@ -29,7 +24,7 @@ export const load: LayoutServerLoad = async ({ locals, cookies, depends, fetch, 
 
   const projects = unwrap(projectsResult, url);
   const users = unwrap(usersResult, url);
-  const people: Record<string, Person> = {};
+  const people: People = {};
   for (const u of users)
     people[u.id] = { name: u.name, email: u.email, active: u.status === 'active' };
 
