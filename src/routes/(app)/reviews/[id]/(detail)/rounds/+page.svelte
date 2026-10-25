@@ -78,12 +78,12 @@
               <TriangleAlert class="mt-0.5 size-4 shrink-0 text-warning" />
             {/if}
             <div class="min-w-0 flex-1 space-y-1">
-              <p class="flex flex-wrap items-center gap-2">
+              <div class="flex flex-wrap items-center gap-2">
                 <UserAvatar name={nameOf(data.people, s.by)} size="xs" />
                 <strong class="font-medium">{nameOf(data.people, s.by)}</strong>
                 {s.result === 'approved' ? 'aprobó' : 'pidió ajustes'}
                 <span class="text-xs text-muted-foreground">{formatDateTime(s.createdAt)}</span>
-              </p>
+              </div>
               {#if s.body}<p class="text-muted-foreground">«{s.body}»</p>{/if}
             </div>
           </div>

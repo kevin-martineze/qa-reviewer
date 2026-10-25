@@ -6,6 +6,10 @@ export interface ReviewAbilities {
   /** Dar veredicto y enviar la ronda. */
   verdict: boolean;
   comment: boolean;
+  /** Marcar un comentario como resuelto. */
+  resolve: boolean;
+  /** Borrar comentarios de otros. */
+  moderate: boolean;
   assign: boolean;
   /** Anular el último envío y volver a «En revisión». */
   reopen: boolean;
@@ -23,6 +27,8 @@ export function reviewAbilities(
   return {
     verdict: perms.has('verdicts:set') && !isAuthor && roundOpen,
     comment: perms.has('comments:create') && review.status !== 'closed',
+    resolve: perms.has('comments:resolve') && review.status !== 'closed',
+    moderate: perms.has('comments:moderate'),
     assign: perms.has('reviews:assign') && review.status !== 'closed',
     reopen: perms.has('reviews:reopen') && submitted,
     isAuthor,

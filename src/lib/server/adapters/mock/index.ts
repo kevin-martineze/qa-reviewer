@@ -345,6 +345,8 @@ export function mockGateway(locals: App.Locals): Gateways {
         const screen = review.screens.find((s) => s.key === screenKey);
         if (!screen) return err(404, 'screens.not_found', 'Pantalla no encontrada.');
         screen.verdict = verdict;
+        // Un veredicto dado en esta ronda reemplaza al heredado.
+        screen.inherited = false;
         if (review.status === 'open') review.status = 'in_review';
         touch(review);
         return ok(review);
