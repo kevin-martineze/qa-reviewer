@@ -106,7 +106,7 @@ La estructura de rutas, los templates y las reglas de navegación están definid
 ### Datos sensibles (repo público)
 
 - **NO metas capturas reales de Lideris en el repo.** Usa imágenes sintéticas en `static/fixtures/`.
-- Si necesitas probar con capturas reales, ponlas en `fixtures-private/` en la raíz (está en `.gitignore`). Nunca bajo `static/`: se copia al build y queda público.
+- Capturas reales de Lideris: solo anonimizadas con `scripts/capture-lideris.mjs` (van a `static/demo/lideris/`) y revisadas a ojo antes de commitear. Sesiones, tokens o capturas sin anonimizar van en `fixtures-private/` (raíz, gitignored), nunca bajo `static/`: se copia al build y queda público.
 - Las contraseñas semilla son solo de mock: van en un archivo de seeds, nunca en `.env`.
 
 ---
@@ -227,7 +227,7 @@ export const actions = {
 13. `{#each}` sin key.
 14. Acceder a `window`/`document`/`localStorage` sin SSR guard.
 15. Editar archivos en `src/lib/components/ui/` a mano. Si necesitas un cambio, sobreescribe en una composición de nivel superior o ejecuta `shadcn-svelte add` con el flag de overwrite.
-16. Capturas reales de Lideris en el repo — usar `static/fixtures/` (sintético) o `fixtures-private/` (raíz, gitignored).
+16. Capturas reales de Lideris sin anonimizar en el repo — usar `static/fixtures/` (sintético) o `scripts/capture-lideris.mjs` (anonimiza a `static/demo/lideris/`).
 
 ---
 

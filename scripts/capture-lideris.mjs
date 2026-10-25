@@ -1,24 +1,46 @@
-// Captura pantallas reales de Lideris para el mock de QA Reviewer. SOLO LOCAL.
+// Captura pantallas reales de Lideris para la demo del mock de QA Reviewer.
 //
 //   1. Levanta Lideris (p. ej. `pnpm vite dev --port 5190` en lideris-v2).
 //   2. node scripts/capture-lideris.mjs
 //   3. Si no hay sesión guardada, se abre Chrome: inicia sesión a mano; el script sigue solo.
+//   4. Revisa cada PNG antes de commitear: el repo y la demo son públicos.
 //
-// Escribe fixtures-private/lideris/<escena>.png + manifest.json. Esa carpeta está en
-// .gitignore: las capturas pueden tener datos reales y el repo es público. El mock las usa
-// si existen (src/lib/server/adapters/mock/private-captures.ts); si no, usa los SVG.
+// Escribe static/demo/lideris/<escena>.png (entra al build) y el manifest con las cajas
+// medidas en src/lib/server/adapters/mock/lideris-captures.json. Antes de cada captura
+// anonimiza la página (anonymize): correos, cédulas, nombres de personas, ids internos,
+// nombre de la clínica y fotos de perfil. La sesión queda en fixtures-private/ (gitignored).
 //
 // Variables opcionales: LIDERIS_URL (http://localhost:5190), PO_ID, PO_QUOTED_ID, SUPPLIER_ID,
 // PURCHASE_ORDER_ID para fijar las entidades en vez de descubrirlas en los listados.
 import { existsSync } from 'node:fs';
-import { copyFile, mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import { chromium } from '@playwright/test';
 
 const BASE = (process.env.LIDERIS_URL ?? 'http://localhost:5190').replace(/\/$/, '');
-const OUT = join(process.cwd(), 'fixtures-private', 'lideris');
-const AUTH = join(OUT, '.auth.json');
+const OUT = join(process.cwd(), 'static', 'demo', 'lideris');
+const MANIFEST = join(
+  process.cwd(),
+  'src',
+  'lib',
+  'server',
+  'adapters',
+  'mock',
+  'lideris-captures.json',
+);
+const PRIVATE = join(process.cwd(), 'fixtures-private', 'lideris');
+const AUTH = join(PRIVATE, '.auth.json');
+/**
+ * Nombres del cliente a reemplazar por «Clínica Demo» (p. ej. el de la clínica). Van en
+ * fixtures-private/lideris/anon.json ({ "terms": ["…"] }), gitignored: el repo es público.
+ */
+const ANON_FILE = join(PRIVATE, 'anon.json');
+const PRIVATE_TERMS = existsSync(ANON_FILE)
+  ? (JSON.parse(await readFile(ANON_FILE, 'utf8')).terms ?? [])
+  : [];
+/** Foto de perfil del banco propio que reemplaza la real. */
+const AVATAR = `data:image/webp;base64,${(await readFile(join(process.cwd(), 'static', 'avatars', 'a05.webp'))).toString('base64')}`;
 
 /** Selectores de los componentes que el mock referencia (scenes.ts · EL y escenas genéricas). */
 const SELECTORS = [
@@ -174,6 +196,78 @@ function measure(page) {
   }, SELECTORS);
 }
 
+/**
+ * Quita los datos reales de la página antes de capturar. Todo es determinista (mismo
+ * valor real, mismo reemplazo), así las versiones de una escena siguen coincidiendo.
+ */
+function anonymize(page) {
+  return page.evaluate(
+    ([avatar, privateTerms]) => {
+      // Nombres del cliente (clínica, sedes): vienen de un archivo local, nunca del repo.
+      const terms = new RegExp(
+        privateTerms.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') || '(?!)',
+        'gi',
+      );
+      const FAKE_NAMES = [
+        'ANA LUCÍA GÓMEZ RUIZ',
+        'CARLOS ANDRÉS PÉREZ DÍAZ',
+        'LUCÍA TORRES MEJÍA',
+        'ANDRÉS FELIPE ROJAS LEÓN',
+        'PAULA MÉNDEZ CANO',
+        'JORGE IVÁN SILVA ORTIZ',
+        'MARTA RÍOS VEGA',
+        'DIEGO CASTRO PEÑA',
+        'SARA MOLINA GIL',
+        'FELIPE DUARTE SANZ',
+      ];
+      const hash = (text) =>
+        [...text].reduce((h, c) => (Math.imul(h, 31) + c.charCodeAt(0)) >>> 0, 7);
+      const scramble = (text, alphabet) => {
+        let h = hash(text);
+        return text.replace(/[0-9a-f]/g, () => {
+          h = (Math.imul(h, 1103515245) + 12345) >>> 0;
+          return alphabet[h % alphabet.length];
+        });
+      };
+      // Nombre de persona natural: 3 a 5 palabras en mayúsculas, sin números.
+      const isPersonName = (text) => {
+        const words = text.split(' ');
+        return (
+          words.length >= 3 &&
+          words.length <= 5 &&
+          words.every((w) => /^[A-ZÁÉÍÓÚÑ]+$/.test(w)) &&
+          words.filter((w) => w.length >= 3).length >= 3
+        );
+      };
+      const clean = (text) => {
+        const trimmed = text.trim();
+        if (isPersonName(trimmed))
+          return text.replace(trimmed, FAKE_NAMES[hash(trimmed) % FAKE_NAMES.length]);
+        return text
+          .replace(/[\w.+-]+@[\w-]+\.[\w.]+/g, 'demo@clinicademo.co')
+          .replace(terms, 'Clínica Demo')
+          .replace(/\b[0-9a-f]{24}\b/g, (m) => scramble(m, '0123456789abcdef'))
+          .replace(/\b\d{7,10}\b/g, (m) => scramble(m, '0123456789'));
+      };
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+        const next = clean(node.textContent ?? '');
+        if (next !== node.textContent) node.textContent = next;
+      }
+      for (const input of document.querySelectorAll('input, textarea')) {
+        if (input.value) input.value = clean(input.value);
+      }
+      for (const img of document.querySelectorAll(
+        '[data-slot="avatar-image"], img[src*="/users/"]',
+      )) {
+        img.removeAttribute('srcset');
+        img.src = avatar;
+      }
+    },
+    [AVATAR, PRIVATE_TERMS],
+  );
+}
+
 async function startEditing(page) {
   await editButton(page).click();
   await page.waitForTimeout(600);
@@ -255,6 +349,7 @@ function plan({ po, quoted, supplier, purchaseOrder }) {
 /* ── Main ────────────────────────────────────────────────────────────── */
 
 await mkdir(OUT, { recursive: true });
+await mkdir(PRIVATE, { recursive: true });
 const browser = await chromium.launch({ channel: 'chrome' });
 const context = await ensureSession(browser);
 
@@ -283,6 +378,8 @@ for (const scene of plan({ po: editable, quoted, supplier, purchaseOrder })) {
       throw new Error('la sesión venció');
     }
     if (scene.act) await scene.act(page);
+    await anonymize(page);
+    await page.waitForTimeout(300);
     const file = `${scene.id}.png`;
     await page.screenshot({ path: join(OUT, file) });
     const entry = {
@@ -292,10 +389,8 @@ for (const scene of plan({ po: editable, quoted, supplier, purchaseOrder })) {
       boxes: await measure(page),
     };
     manifest[scene.id] = entry;
-    for (const alias of scene.alias ?? []) {
-      await copyFile(join(OUT, file), join(OUT, `${alias}.png`));
-      manifest[alias] = { ...entry, file: `${alias}.png` };
-    }
+    // Los alias comparten el mismo PNG.
+    for (const alias of scene.alias ?? []) manifest[alias] = entry;
     console.warn(`✓ ${scene.id} (${Object.keys(entry.boxes).length} componentes medidos)`);
   } catch (err) {
     console.warn(`· ${scene.id}: ${err instanceof Error ? err.message.split('\n')[0] : err}`);
@@ -304,8 +399,8 @@ for (const scene of plan({ po: editable, quoted, supplier, purchaseOrder })) {
   }
 }
 
-await writeFile(join(OUT, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
+await writeFile(MANIFEST, `${JSON.stringify(manifest, null, 2)}\n`);
 await browser.close();
 console.warn(
-  `Listo: ${Object.keys(manifest).length} capturas en ${OUT}. Reinicia el dev server del mock.`,
+  `Listo: ${Object.keys(manifest).length} escenas en ${OUT}. Revisa los PNG antes de commitear.`,
 );
