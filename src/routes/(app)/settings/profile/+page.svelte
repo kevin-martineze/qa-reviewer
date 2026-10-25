@@ -8,6 +8,7 @@
 
   import { Button } from '$lib/components/atoms/button';
   import { Input } from '$lib/components/atoms/input';
+  import AvatarPicker from '$lib/components/molecules/AvatarPicker.svelte';
   import ConfirmDialog from '$lib/components/molecules/ConfirmDialog.svelte';
   import FormField from '$lib/components/molecules/FormField.svelte';
   import PasswordInput from '$lib/components/molecules/PasswordInput.svelte';
@@ -43,7 +44,7 @@
   >
     <SettingsSection title="Perfil" description="Así te ven en comentarios, asignaciones y avisos.">
       <div class="flex items-start gap-4">
-        <UserAvatar name={data.user.name} size="md" />
+        <UserAvatar name={data.user.name} avatar={data.user.avatar} size="lg" />
         <div class="grid flex-1 gap-4 sm:grid-cols-2">
           <FormField id="name" label="Nombre" error={profileErrors.name}>
             {#snippet children({ describedBy, invalid })}
@@ -70,6 +71,14 @@
           </FormField>
         </div>
       </div>
+      {#key data.user.avatar}
+        <AvatarPicker
+          personName={data.user.name}
+          initial={data.user.avatar}
+          error={profileErrors.avatar}
+          class="mt-6"
+        />
+      {/key}
       <p class="mt-4 text-sm text-muted-foreground">
         Rol en la organización: {ORG_ROLE[data.user.orgRole].label}.
       </p>

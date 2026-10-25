@@ -8,6 +8,7 @@
   import { Badge } from '$lib/components/atoms/badge';
   import { Button, buttonVariants } from '$lib/components/atoms/button';
   import { Input } from '$lib/components/atoms/input';
+  import AvatarPicker from '$lib/components/molecules/AvatarPicker.svelte';
   import FormField from '$lib/components/molecules/FormField.svelte';
   import Illustration from '$lib/components/molecules/Illustration.svelte';
   import Notice from '$lib/components/molecules/Notice.svelte';
@@ -30,6 +31,9 @@
   const form = $derived(page.form);
   const errors = $derived<Record<string, string>>(form?.errors ?? {});
   let submitting = $state(false);
+  // El nombre alimenta la opción de iniciales del selector de avatar.
+  const typedName = () => (typeof page.form?.name === 'string' ? page.form.name : '');
+  let name = $state(typedName());
 </script>
 
 {#if data.invite.status === 'valid'}
@@ -72,12 +76,13 @@
             name="name"
             autocomplete="name"
             required
-            value={form?.name ?? ''}
+            bind:value={name}
             aria-invalid={invalid || undefined}
             aria-describedby={describedBy}
           />
         {/snippet}
       </FormField>
+      <AvatarPicker personName={name} initial={form?.avatar ?? null} error={errors.avatar} />
       <FormField
         id="password"
         label="Contraseña"

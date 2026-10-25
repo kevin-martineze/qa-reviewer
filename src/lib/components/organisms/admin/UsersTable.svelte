@@ -74,7 +74,7 @@
         <TableRow>
           <TableCell class="max-w-0">
             <div class="flex min-w-0 items-center gap-2.5">
-              <UserAvatar name={user.name} />
+              <UserAvatar name={user.name} avatar={user.avatar} />
               <div class="min-w-0">
                 <p class="truncate font-medium">
                   {user.name}

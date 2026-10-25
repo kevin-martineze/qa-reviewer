@@ -20,6 +20,8 @@ export interface User {
   email: string;
   orgRole: OrgRole;
   status: UserStatus;
+  /** Id del banco de avatares (`a01`…); `null` muestra las iniciales. */
+  avatar: string | null;
   lastSeenAt: string | null;
   createdAt: string;
 }
@@ -36,7 +38,19 @@ export interface SessionUser {
   email: string;
   orgRole: OrgRole;
   status: UserStatus;
+  avatar: string | null;
   memberships: Membership[];
+}
+
+/** `PATCH /me`. */
+export interface ProfileInput {
+  name: string;
+  avatar: string | null;
+}
+
+/** `POST /invitations/:token/accept`. */
+export interface AcceptInviteInput extends ProfileInput {
+  password: string;
 }
 
 /** `POST /auth/login`: el server de SvelteKit guarda `token` en una cookie httpOnly. */

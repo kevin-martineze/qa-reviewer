@@ -5,7 +5,7 @@
 
   import ToneBadge from '$lib/components/molecules/ToneBadge.svelte';
   import UserAvatar from '$lib/components/molecules/UserAvatar.svelte';
-  import { nameOf } from '$lib/domain/people';
+  import { nameOf, personOf } from '$lib/domain/people';
   import { verdictCounts } from '$lib/domain/verdicts';
   import { cn } from '$lib/utils/cn';
   import { formatDateTime } from '$lib/utils/dates';
@@ -79,7 +79,7 @@
             {/if}
             <div class="min-w-0 flex-1 space-y-1">
               <div class="flex flex-wrap items-center gap-2">
-                <UserAvatar name={nameOf(data.people, s.by)} size="xs" />
+                <UserAvatar {...personOf(data.people, s.by)} size="xs" />
                 <strong class="font-medium">{nameOf(data.people, s.by)}</strong>
                 {s.result === 'approved' ? 'aprobó' : 'pidió ajustes'}
                 <span class="text-xs text-muted-foreground">{formatDateTime(s.createdAt)}</span>

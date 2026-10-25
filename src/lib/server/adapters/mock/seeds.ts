@@ -65,6 +65,7 @@ function user(
   email: string,
   orgRole: OrgRole,
   lastSeen: number | null,
+  avatar: string | null,
 ): User {
   return {
     id,
@@ -72,20 +73,21 @@ function user(
     email,
     orgRole,
     status: lastSeen === null ? 'inactive' : 'active',
+    avatar,
     lastSeenAt: lastSeen === null ? ago(62 * DAY) : ago(lastSeen),
     createdAt: ago(120 * DAY),
   };
 }
 
 export const USERS: User[] = [
-  user('u1', 'Kevin Martínez', 'kevin@ejemplo.co', 'member', 5 * MIN),
-  user('u2', 'Laura Ríos', 'laura.rios@ejemplo.co', 'admin', 12 * MIN),
-  user('u3', 'Andrés Peña', 'andres.pena@ejemplo.co', 'member', 3 * HOUR),
-  user('u4', 'Sofía Vargas', 'sofia.vargas@ejemplo.co', 'member', DAY),
-  user('u5', 'Mateo Cárdenas', 'mateo.cardenas@ejemplo.co', 'member', 2 * HOUR),
-  user('u6', 'Camila Torres', 'camila.torres@ejemplo.co', 'member', 3 * DAY),
-  user('u7', 'Valentina Ruiz', 'valentina.ruiz@ejemplo.co', 'owner', 2 * HOUR),
-  user('u8', 'Julián Ospina', 'julian.ospina@ejemplo.co', 'member', null),
+  user('u1', 'Kevin Martínez', 'kevin@ejemplo.co', 'member', 5 * MIN, 'a01'),
+  user('u2', 'Laura Ríos', 'laura.rios@ejemplo.co', 'admin', 12 * MIN, 'a02'),
+  user('u3', 'Andrés Peña', 'andres.pena@ejemplo.co', 'member', 3 * HOUR, 'a03'),
+  user('u4', 'Sofía Vargas', 'sofia.vargas@ejemplo.co', 'member', DAY, 'a04'),
+  user('u5', 'Mateo Cárdenas', 'mateo.cardenas@ejemplo.co', 'member', 2 * HOUR, 'a05'),
+  user('u6', 'Camila Torres', 'camila.torres@ejemplo.co', 'member', 3 * DAY, 'a06'),
+  user('u7', 'Valentina Ruiz', 'valentina.ruiz@ejemplo.co', 'owner', 2 * HOUR, 'a07'),
+  user('u8', 'Julián Ospina', 'julian.ospina@ejemplo.co', 'member', null, 'a08'),
 ];
 
 /* ── Proyectos y miembros ────────────────────────────────────────────── */

@@ -21,7 +21,7 @@
   import UserAvatar from '$lib/components/molecules/UserAvatar.svelte';
   import { dueState } from '$lib/domain/due';
   import { PRIORITY, REVIEW_STATUS } from '$lib/domain/labels';
-  import { nameOf, type People } from '$lib/domain/people';
+  import { type People, nameOf, personOf } from '$lib/domain/people';
   import type { ReviewAbilities } from '$lib/domain/review-abilities';
   import { cn } from '$lib/utils/cn';
 
@@ -133,7 +133,7 @@
               'nadie'}. Cambiar"
           >
             {#if review.assignees.length}
-              <AvatarStack names={review.assignees.map((id) => nameOf(people, id))} />
+              <AvatarStack users={review.assignees.map((id) => personOf(people, id))} />
             {:else}
               <UserPlus />
             {/if}
@@ -166,7 +166,7 @@
                         value={id}
                         checked={review.assignees.includes(id)}
                       />
-                      <UserAvatar name={nameOf(people, id)} size="xs" />
+                      <UserAvatar {...personOf(people, id)} size="xs" />
                       <span class="truncate">{nameOf(people, id)}</span>
                     </label>
                   </li>
@@ -181,7 +181,7 @@
       {:else}
         <span class="flex items-center gap-2 text-xs text-muted-foreground">
           Revisa
-          <AvatarStack names={review.assignees.map((id) => nameOf(people, id))} />
+          <AvatarStack users={review.assignees.map((id) => personOf(people, id))} />
         </span>
       {/if}
     </div>

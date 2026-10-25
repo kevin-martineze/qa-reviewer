@@ -16,7 +16,7 @@
   import { TONE_DOT } from '$lib/components/molecules/tone';
   import { dueState } from '$lib/domain/due';
   import { PRIORITY, REVIEW_STATUS } from '$lib/domain/labels';
-  import { nameOf, type People } from '$lib/domain/people';
+  import { type People, nameOf, personOf } from '$lib/domain/people';
   import { progressOf } from '$lib/domain/review-progress';
   import { cn } from '$lib/utils/cn';
   import { formatRelative } from '$lib/utils/dates';
@@ -87,7 +87,7 @@
             />
           </TableCell>
           <TableCell>
-            <AvatarStack names={review.assignees.map((id) => nameOf(people, id))} />
+            <AvatarStack users={review.assignees.map((id) => personOf(people, id))} />
           </TableCell>
           <TableCell class="text-right text-xs whitespace-nowrap text-muted-foreground">
             {formatRelative(review.updatedAt, now)}

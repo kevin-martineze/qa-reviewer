@@ -118,7 +118,7 @@
               class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
               onclick={() => useDemo(account.email)}
             >
-              <UserAvatar name={account.name} size="sm" />
+              <UserAvatar name={account.name} avatar={account.avatar} size="sm" />
               <span class="min-w-0">
                 <span class="block truncate text-sm">{account.name}</span>
                 <span class="block truncate text-xs text-muted-foreground">{account.role}</span>

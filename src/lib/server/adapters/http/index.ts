@@ -61,13 +61,13 @@ export function httpGateway(locals: App.Locals, fetchFn?: typeof fetch): Gateway
       logout: () => api.send('POST', '/auth/logout'),
       me: () => api.request('GET', '/me'),
       inviteInfo: (token) => api.request('GET', `/invitations/${enc(token)}`),
-      acceptInvite: (token, name, password) =>
-        api.request('POST', `/invitations/${enc(token)}/accept`, { name, password }),
+      acceptInvite: (token, input) =>
+        api.request('POST', `/invitations/${enc(token)}/accept`, input),
       requestRecovery: (email) => api.send('POST', '/auth/recovery', { email }),
       recoveryInfo: (token) => api.request('GET', `/auth/recovery/${enc(token)}`),
       resetPassword: (token, password) =>
         api.send('POST', `/auth/recovery/${enc(token)}`, { password }),
-      updateProfile: (name) => api.request('PATCH', '/me', { name }),
+      updateProfile: (input) => api.request('PATCH', '/me', input),
       changePassword: (current, next) => api.send('PUT', '/me/password', { current, next }),
       logoutEverywhere: () => api.send('POST', '/auth/logout-all'),
     },

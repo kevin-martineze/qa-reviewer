@@ -7,6 +7,7 @@ export interface DemoAccount {
   name: string;
   email: string;
   role: string;
+  avatar: string | null;
 }
 
 const SHOWN = ['u2', 'u1', 'u3', 'u6', 'u7'];
@@ -20,7 +21,7 @@ export function demoAccounts(): { password: string; accounts: DemoAccount[] } {
       return `${PROJECT_ROLE[m.role].label} en ${project}`;
     });
     const role = user.orgRole === 'member' ? projects.join(' · ') : ORG_ROLE[user.orgRole].label;
-    return [{ name: user.name, email: user.email, role }];
+    return [{ name: user.name, email: user.email, role, avatar: user.avatar }];
   });
   return { password: DEMO_PASSWORD, accounts };
 }

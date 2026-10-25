@@ -118,6 +118,8 @@ El árbol de rutas está en [layouts.md](layouts.md#árbol-de-rutas).
 - **Fechas**: zona fija America/Bogotá y texto armado a mano («20 oct», «4:58 p. m.»), para que server y navegador pinten lo mismo. `now` llega del layout.
 - **Gráficos**: paleta validada con la skill dataviz (categórica `viz-1`/`viz-2`, crítico `viz-critical`, en claro y oscuro), sin doble eje, tooltip en hover y foco, y tabla equivalente.
 - **Ilustraciones**: `static/illustrations/*.webp` (fondo transparente, 560 px de ancho como máximo) vía `<Illustration name>` o `EmptyState illustration=`. Solo en estados de página completa y en `ErrorState` (403, 404, 410 y 5xx); las tarjetas chicas siguen con ícono. Son decorativas (`alt=""`): el título dice lo que pasa. Generadas con Gemini con un estilo común (vector plano, slate + `brand` #2a78d6 + acento #eb6834); al agregar una, registra sus dimensiones en `molecules/illustrations.ts`.
+- **Avatares**: banco fijo de 12 ilustraciones en `static/avatars/<id>.webp` (`$lib/domain/avatars.ts`). El API guarda solo el id (`User.avatar`, `SessionUser.avatar`); el front arma la URL. Un id desconocido o `null` muestra las iniciales. Se elige con `AvatarPicker` al aceptar la invitación y en Ajustes → Perfil. Subir foto propia queda fuera por ahora.
+- **Tema**: claro por defecto (`ModeWatcher defaultMode="light"`); «Sistema» del menú se guarda explícito con `setMode('system')`.
 - **Marca**: `BrandMark` (isotipo SVG con tokens `foreground`/`brand`, igual que `static/favicon.svg`), `BrandHero` en el panel lateral de las pantallas públicas (≥ `lg`) y `static/brand/og.jpg` (1200×630) como vista previa de los enlaces.
 - **Accesibilidad**: el veredicto nunca se comunica solo con color (texto + ícono); cada gráfico tiene su tabla.
 

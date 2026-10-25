@@ -15,7 +15,7 @@
   import { Textarea } from '$lib/components/atoms/textarea';
   import UserAvatar from '$lib/components/molecules/UserAvatar.svelte';
   import { awaitingFollowUp } from '$lib/domain/follow-ups';
-  import { nameOf, type People } from '$lib/domain/people';
+  import { type People, nameOf, personOf } from '$lib/domain/people';
   import type { ReviewAbilities } from '$lib/domain/review-abilities';
   import { cn } from '$lib/utils/cn';
   import { formatRelative } from '$lib/utils/dates';
@@ -143,7 +143,7 @@
       {#each comment.replies as reply (reply.id)}
         <li class="space-y-0.5">
           <div class="flex items-center gap-1.5 text-xs">
-            <UserAvatar name={nameOf(people, reply.author)} size="xs" />
+            <UserAvatar {...personOf(people, reply.author)} size="xs" />
             <span class="font-medium">{nameOf(people, reply.author)}</span>
             <span class="text-muted-foreground">{formatRelative(reply.createdAt, now)}</span>
           </div>

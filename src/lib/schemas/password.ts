@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { avatarSchema } from './avatar';
+
 export const PASSWORD_MIN = 12;
 
 export const passwordSchema = z.string().min(PASSWORD_MIN, 'Mínimo 12 caracteres.');
@@ -16,6 +18,7 @@ export const passwordFormSchema = z
 
 export const inviteSchema = passwordFormSchema.extend({
   name: z.string().trim().min(1, 'Escribe tu nombre.'),
+  avatar: avatarSchema,
 });
 
 export type PasswordFormSchema = typeof passwordFormSchema;
