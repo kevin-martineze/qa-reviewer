@@ -21,12 +21,12 @@ Estos atajos ponen condiciones sobre `pathname` y singletons de módulo en la ca
 
 ## Alternativas descartadas
 
-| Alternativa | Por qué se descarta |
-|---|---|
-| Condiciones sobre `pathname` en el layout | El chrome depende de un `if` escondido; difícil de leer y de probar |
-| `+page@grupo.svelte` generalizado para cada excepción | Un reset es el último recurso; para chrome distinto, un grupo propio es más claro |
-| Markup inline en cada `+layout.svelte` | Duplica cabecera y tabs entre detalles; el template lo centraliza |
-| Store singleton para el chrome | Un singleton de módulo se comparte entre peticiones en SSR; además acopla la página al layout |
+| Alternativa                                           | Por qué se descarta                                                                           |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Condiciones sobre `pathname` en el layout             | El chrome depende de un `if` escondido; difícil de leer y de probar                           |
+| `+page@grupo.svelte` generalizado para cada excepción | Un reset es el último recurso; para chrome distinto, un grupo propio es más claro             |
+| Markup inline en cada `+layout.svelte`                | Duplica cabecera y tabs entre detalles; el template lo centraliza                             |
+| Store singleton para el chrome                        | Un singleton de módulo se comparte entre peticiones en SSR; además acopla la página al layout |
 
 ## Consecuencias
 

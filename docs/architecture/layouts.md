@@ -4,11 +4,11 @@ Cómo se arma la estructura visual del frontend. La meta es que **la carpeta de 
 
 ## Tres piezas, tres responsabilidades
 
-| Pieza | Dónde | Responsabilidad | No hace |
-|---|---|---|---|
-| **Layout de ruta** | `routes/**/+layout.svelte` + `+layout.server.ts` | Guard, datos compartidos por el segmento, elegir el template y llenarlo con organisms | Markup propio (más allá de llamar al template), condiciones sobre la URL |
-| **Template** | `$lib/components/templates/*` | Estructura visual: regiones (snippets), espaciado, scroll, sticky, ancho | Cargar datos, leer `page`, stores, tipos de dominio, organisms de negocio |
-| **Página** | `routes/**/+page.svelte` + `+page.server.ts` | Datos de su vista, actions, `meta` (título, migas) y composición del contenido | Tocar el chrome del padre, abrir su propio contenedor de scroll |
+| Pieza              | Dónde                                            | Responsabilidad                                                                       | No hace                                                                   |
+| ------------------ | ------------------------------------------------ | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| **Layout de ruta** | `routes/**/+layout.svelte` + `+layout.server.ts` | Guard, datos compartidos por el segmento, elegir el template y llenarlo con organisms | Markup propio (más allá de llamar al template), condiciones sobre la URL  |
+| **Template**       | `$lib/components/templates/*`                    | Estructura visual: regiones (snippets), espaciado, scroll, sticky, ancho              | Cargar datos, leer `page`, stores, tipos de dominio, organisms de negocio |
+| **Página**         | `routes/**/+page.svelte` + `+page.server.ts`     | Datos de su vista, actions, `meta` (título, migas) y composición del contenido        | Tocar el chrome del padre, abrir su propio contenedor de scroll           |
 
 Regla corta: **el layout decide, el template dibuja, la página llena.**
 
@@ -27,26 +27,27 @@ src/routes/
 │   └── recover/[[token]]/            pedir enlace · definir contraseña nueva
 │
 └── (app)/                            con sesión
-    ├── +layout.server.ts             user, membresías, no leídas · depends('app:session')
+    ├── +layout.server.ts             user, permisos, proyectos, personas, no leídas · depends('app:session', 'app:notifications')
     ├── +layout.svelte                AppShell
     ├── +error.svelte                 error dentro del shell (la navegación sigue a mano)
     ├── +page.*                       Bandeja                                  ListTemplate
-    ├── notifications/                                                         ListTemplate
+    ├── session/                      sin página: actions logout, project, switchUser (mock) que dispara el shell
+    ├── notifications/                actions open, markAllRead (también las usa la campana)     ListTemplate
     ├── reviews/
     │   ├── +page.*                   Listado (filtros en la URL)              ListTemplate
     │   └── [id]/
-    │       ├── +layout.server.ts     revisión: cabecera, pantallas, ronda, permisos · depends('review:<id>')
+    │       ├── +layout.server.ts     revisión, comentarios, diseñadores, permisos (data.can) · depends('review:<id>')
     │       ├── (detail)/             todo lo que lleva cabecera + tabs
     │       │   ├── +layout.svelte    DetailTemplate: cabecera, banner de ronda, tabs, barra de envío
     │       │   ├── +error.svelte     falla una tab sin perder la cabecera
-    │       │   ├── +page.*           Pantallas            /reviews/QR-0012
+    │       │   ├── +page.*           Pantallas            /reviews/QR-0012 · actions assign, priority, submit, reopen
     │       │   ├── summary/          Resumen
     │       │   ├── rounds/           Rondas
     │       │   ├── feedback/         Para Claude Code
     │       │   ├── activity/         Actividad
     │       │   └── branch/           Rama y PR
     │       └── screens/[key]/        Visor: ViewerTemplate. No está bajo (detail), así que no lleva tabs.
-    │           └── +page.*           load de la pantalla · actions verdict, comment, followUp
+    │           └── +page.*           load de la pantalla · actions verdict, comment, reply, resolve, followUp, delete
     ├── metrics/                      guard reports:view                       DashboardTemplate
     ├── projects/[slug]/settings/
     │   ├── +layout.server.ts         guard projects:configure
@@ -69,15 +70,17 @@ Por qué así:
 
 ## Catálogo de templates
 
-| Template | Regiones (snippets) | Props | Lo usa |
-|---|---|---|---|
-| `AppShell` | `children` | `nav`, `user`, `crumbs`, `unread` | `(app)/+layout` |
-| `AuthTemplate` | `children`, `footer?` | `title`, `description?` | `(public)/+layout` |
-| `ListTemplate` | `actions?`, `filters?`, `children`, `pagination?` | `title`, `description?` | bandeja, revisiones, notificaciones, usuarios |
-| `DetailTemplate` | `header`, `banner?`, `children`, `footer?`, `pending?` | `tabs`, `currentTab`, `loading` | `reviews/[id]/(detail)` |
-| `ViewerTemplate` | `toolbar`, `children` (lienzo), `aside`, `footer?` | `asideWidth?` | `screens/[key]` |
-| `SettingsTemplate` | `children`, `actions?` | `title`, `nav`, `currentNav` | `admin`, `settings`, `projects/[slug]/settings` |
-| `DashboardTemplate` | `filters?`, `kpis?`, `children` | `title`, `description?` | `metrics` |
+| Template            | Regiones (snippets)                                    | Props                                        | Lo usa                                          |
+| ------------------- | ------------------------------------------------------ | -------------------------------------------- | ----------------------------------------------- |
+| `AppShell`          | `sidebar(collapsed)`, `topbar`, `children`             | `crumbs`, `collapsed?`, `onToggle?`          | `(app)/+layout`                                 |
+| `AuthTemplate`      | `children`, `footer?`                                  | `title`, `description?`                      | `(public)/+layout`                              |
+| `ListTemplate`      | `actions?`, `filters?`, `children`, `pagination?`      | `title`, `description?`                      | bandeja, revisiones, notificaciones             |
+| `DetailTemplate`    | `header`, `banner?`, `children`, `footer?`, `pending?` | `tabs`, `currentTab`, `loading?`             | `reviews/[id]/(detail)`                         |
+| `ViewerTemplate`    | `toolbar`, `children` (lienzo), `aside?`, `footer?`    | —                                            | `screens/[key]`                                 |
+| `SettingsTemplate`  | `children`, `actions?`                                 | `title`, `description?`, `nav`, `currentNav` | `admin`, `settings`, `projects/[slug]/settings` |
+| `DashboardTemplate` | `filters?`, `kpis?`, `children`                        | `title`, `description?`                      | `metrics`                                       |
+
+Dentro de `SettingsTemplate` y `DashboardTemplate`, cada bloque es un `SettingsSection` (molecule: título, descripción, `actions?`, `footer?` con el botón Guardar). No es un template: no maneja scroll ni regiones de página.
 
 Un template nuevo se agrega solo si ninguno de estos sirve. Va con su caso en este archivo.
 
@@ -106,49 +109,37 @@ El gate de ESLint bloquea `page.url.pathname` dentro de `+layout.svelte`.
 - La tab activa llega como prop (`currentTab`). El template no la deduce de la URL.
 
 ```svelte
-<!-- $lib/components/templates/DetailTemplate.svelte -->
-<script lang="ts">
-  import type { Snippet } from 'svelte';
-
-  import NavTabs from '$lib/components/molecules/NavTabs.svelte';
-  import type { NavItem } from '$lib/components/molecules/nav';
-
-  interface Props {
-    header: Snippet;
-    tabs: NavItem[];
-    currentTab: string;
-    banner?: Snippet;
-    footer?: Snippet;
-    pending?: Snippet;
-    loading?: boolean;
-    children: Snippet;
-  }
-
-  let { header, tabs, currentTab, banner, footer, pending, loading = false, children }: Props =
-    $props();
-</script>
-
+<!-- $lib/components/templates/DetailTemplate.svelte (markup) -->
 <div class="flex h-full min-h-0 flex-col">
-  <header class="shrink-0 pb-4">{@render header()}</header>
-  {@render banner?.()}
-  <NavTabs items={tabs} current={currentTab} class="shrink-0" />
-  <main class="min-h-0 flex-1 overflow-y-auto py-4">
-    {#if loading && pending}
-      {@render pending()}
-    {:else}
-      {@render children()}
-    {/if}
-  </main>
+  <!-- Un solo scroll: la cabecera se va con el contenido y las pestañas quedan pegadas arriba. -->
+  <div data-scroll class="min-h-0 flex-1 overflow-y-auto" aria-busy={loading}>
+    <div class="space-y-4 px-6 pt-6">
+      {@render header()}
+      {@render banner?.()}
+    </div>
+    <div class="sticky top-0 z-10 bg-background px-6 pt-4">
+      <NavTabs items={tabs} current={currentTab} />
+    </div>
+    <div class="px-6 py-5">
+      {#if loading && pending}
+        {@render pending()}
+      {:else}
+        {@render children()}
+      {/if}
+    </div>
+  </div>
   {#if footer}
-    <footer class="shrink-0 border-t bg-background">{@render footer()}</footer>
+    <footer class="shrink-0 border-t bg-background px-6 py-3">{@render footer()}</footer>
   {/if}
 </div>
 ```
 
+La cabecera y el banner se desplazan con el contenido y las pestañas quedan fijas (`sticky top-0`) dentro del mismo scroll. Así, en una laptop de 720 px de alto, la grilla de pantallas no queda aplastada bajo una cabecera fija.
+
 ### 3. El layout llena el template con organisms
 
 ```svelte
-<!-- routes/(app)/reviews/[id]/(detail)/+layout.svelte -->
+<!-- routes/(app)/reviews/[id]/(detail)/+layout.svelte (resumido) -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
 
@@ -160,7 +151,6 @@ El gate de ESLint bloquea `page.url.pathname` dentro de `+layout.svelte`.
   import ReviewHeader from '$lib/components/organisms/review/ReviewHeader.svelte';
   import RoundBanner from '$lib/components/organisms/review/RoundBanner.svelte';
   import SubmitReviewBar from '$lib/components/organisms/review/SubmitReviewBar.svelte';
-  import TabSkeleton from '$lib/components/molecules/TabSkeleton.svelte';
   import DetailTemplate from '$lib/components/templates/DetailTemplate.svelte';
 
   interface Props {
@@ -171,27 +161,42 @@ El gate de ESLint bloquea `page.url.pathname` dentro de `+layout.svelte`.
   let { data, children }: Props = $props();
 
   const id = $derived(data.review.id);
+  // El id de ruta incluye el grupo: resolve('/(app)/reviews/[id]/(detail)/summary', { id }).
   const tabs = $derived([
-    { key: 'screens', label: 'Pantallas', href: resolve('/(app)/reviews/[id]', { id }) },
-    { key: 'summary', label: 'Resumen', href: resolve('/(app)/reviews/[id]/summary', { id }) },
-    { key: 'rounds', label: 'Rondas', href: resolve('/(app)/reviews/[id]/rounds', { id }) },
-    { key: 'feedback', label: 'Para Claude Code', href: resolve('/(app)/reviews/[id]/feedback', { id }) },
-    { key: 'activity', label: 'Actividad', href: resolve('/(app)/reviews/[id]/activity', { id }) },
-    { key: 'branch', label: 'Rama y PR', href: resolve('/(app)/reviews/[id]/branch', { id }) },
+    {
+      key: 'screens',
+      label: `Pantallas (${data.review.screens.length})`,
+      href: resolve('/(app)/reviews/[id]/(detail)', { id }),
+    },
+    {
+      key: 'summary',
+      label: 'Resumen',
+      href: resolve('/(app)/reviews/[id]/(detail)/summary', { id }),
+    },
+    // … rounds, feedback, activity, branch
   ]);
   const currentTab = $derived(page.data.meta?.tab ?? 'screens');
-  // Cambiar de tab espera al load de la tab destino: sin esto la vista anterior parece congelada.
-  const loading = $derived(navigating.to !== null && navigating.to.route.id !== page.route.id);
+  // Skeleton solo al cambiar de pestaña dentro de la misma revisión.
+  const loading = $derived(
+    navigating.to !== null &&
+      navigating.to.params?.id === id &&
+      (navigating.to.route.id ?? '').startsWith('/(app)/reviews/[id]/(detail)') &&
+      navigating.to.route.id !== navigating.from?.route.id,
+  );
 </script>
 
-{#snippet header()}<ReviewHeader review={data.review} />{/snippet}
-{#snippet banner()}<RoundBanner review={data.review} />{/snippet}
-{#snippet footer()}
-  {#if data.can.submit}<SubmitReviewBar review={data.review} />{/if}
-{/snippet}
-{#snippet pending()}<TabSkeleton />{/snippet}
+{#snippet header()}<ReviewHeader review={data.review} … can={data.can} />{/snippet}
+{#snippet banner()}<RoundBanner review={data.review} … canReopen={data.can.reopen} />{/snippet}
+{#snippet footer()}<SubmitReviewBar review={data.review} />{/snippet}
 
-<DetailTemplate {header} {banner} {footer} {pending} {tabs} {currentTab} {loading}>
+<DetailTemplate
+  {header}
+  {banner}
+  {tabs}
+  {currentTab}
+  {loading}
+  footer={data.can.verdict ? footer : undefined}
+>
   {@render children()}
 </DetailTemplate>
 ```
@@ -209,15 +214,16 @@ Nada de stores singleton para que una página «registre» acciones, filtros o u
 - `[id]/+layout.server.ts` carga la cabecera, la lista de pantallas (para la grilla y para anterior/siguiente del visor), la ronda y los permisos sobre la revisión (`data.can`).
 - Lo propio de cada tab va en su `+page.server.ts`: actividad, feedback generado, historial de rondas.
 - Si una página necesita algo del padre, llama a `await parent()` **después** de lanzar sus propias peticiones, para no armar una cascada.
-- Cada `load` declara su llave de invalidación: `depends('app:session')`, `depends('review:<id>')`, `depends('notifications')`. Después de una mutación, `invalidate('review:<id>')` recarga solo lo necesario.
+- Los `load` que otros pueden querer recargar declaran su llave: `depends('app:session', 'app:notifications')` en `(app)`, `depends('app:notifications')` en notificaciones y `depends('review:<id>')` en la revisión.
+- Después de una form action con `use:enhance`, SvelteKit recarga todo (`invalidateAll`). Para refrescos sin action (p. ej. un polling futuro de notificaciones) se usa `invalidate('app:notifications')`.
 
 ### 6. El guard del layout es UX; el permiso se valida en cada action
 
 SvelteKit **no** ejecuta los `load` de los layouts antes de una action. Un guard solo en el `+layout.server.ts` deja las actions abiertas.
 
 - `hooks.server.ts`: sin sesión y `event.route.id` bajo `/(app)` → redirect a `/login`. Cubre loads y actions.
-- `+layout.server.ts` del segmento: `requirePermission(locals, 'reports:view')` para cortar temprano y con un 403 claro.
-- Cada action: `requirePermission(locals, 'verdicts:set', review.projectId)` otra vez. El API también lo valida; el front no es la última barrera.
+- `+layout.server.ts` del segmento: `requirePermission(locals, 'projects:configure', params.slug)` para cortar temprano y con un 403 claro.
+- Cada action: `requirePermission(…)` otra vez, con el proyecto de la URL o de la revisión. En los ajustes del proyecto lo hace `saveProject()` (`$lib/server/project-settings.ts`). El API también lo valida; el front no es la última barrera.
 
 ### 7. `meta` sale del `load` de la página
 
@@ -239,30 +245,38 @@ Ninguna página escribe su propio `<svelte:head>` ni deduce la tab de la URL.
 
 Al ir de `/reviews/QR-0012` a `/reviews/QR-0013`, SvelteKit **reusa** los componentes del layout. El `$state` local sobrevive y muestra datos de la revisión anterior.
 
-- Lo que se puede compartir va en la URL: «Ver solo lo que cambió» (`?changed=1`), modo de comparación (`?compare=r1&mode=slider`), ronda (`?round=1`).
-- Lo efímero (ancla en curso, zoom) se envuelve en `{#key data.review.id}` o `{#key data.screen.key}`.
+- Lo que se puede compartir va en la URL: «Solo lo que cambió» (`?changed=1`), comparación del visor (`?compare=previous|base&mode=side|slider|toggle`), comentario abierto (`?comment=c1`), filtros de listas (`?view=…&q=…&page=…`), pestaña de notificaciones (`?tab=unread`) y periodo de métricas (`?range=30`).
+- Lo efímero (pin en curso, capas del visor) se reinicia al cambiar de pantalla.
+- Un formulario que edita una copia de los props (p. ej. las reglas de asignación) se monta dentro de `{#key data.project}`: la copia en `$state` se descarta sola cuando el server devuelve lo guardado.
 
 ### 10. Errores en el nivel donde se pueden mostrar
 
-| Archivo | Cubre | El usuario conserva |
-|---|---|---|
-| `+error.svelte` (raíz) | fallo del shell o sin sesión | nada (pantalla simple con link al inicio) |
-| `(app)/+error.svelte` | revisión inexistente, 403 de un segmento | sidebar y topbar |
-| `reviews/[id]/(detail)/+error.svelte` | falla una tab | cabecera de la revisión y las tabs |
+| Archivo                               | Cubre                                    | El usuario conserva                       |
+| ------------------------------------- | ---------------------------------------- | ----------------------------------------- |
+| `+error.svelte` (raíz)                | fallo del shell o sin sesión             | nada (pantalla simple con link al inicio) |
+| `(app)/+error.svelte`                 | revisión inexistente, 403 de un segmento | sidebar y topbar                          |
+| `reviews/[id]/(detail)/+error.svelte` | falla una tab                            | cabecera de la revisión y las tabs        |
 
 Un `+error.svelte` se dibuja **dentro** de los layouts superiores al segmento que falló. Si falla el `load` de `[id]`, se usa el de `(app)`.
+
+### 11. Mutaciones y avisos
+
+- SvelteKit no admite actions en un `+layout.server.ts`. Lo que dispara el chrome tiene su ruta: `/session` (cerrar sesión, cambiar de proyecto) y `/notifications` (abrir, marcar leídas). Las acciones de la revisión viven en `(detail)/+page.server.ts` y los formularios del header apuntan ahí con `action="{base}?/assign"`.
+- Respuesta estándar: `{ message }` si salió bien y `fail(status, { error })` si no. Un solo `$effect` en `(app)/+layout.svelte` las convierte en toast (`formFeedback`).
+- Errores por campo van aparte (`{ errors }`, `{ inviteErrors }`…) y se pintan junto al campo con `FormField`, no en un toast. Si el form vive en un diálogo, la página lo reabre cuando llegan errores.
+- Confirmaciones destructivas: `ConfirmDialog` (molecule) con los inputs ocultos como snippet `fields`.
 
 ## Lo que no copiamos de lideris-v2
 
 lideris-v2 creció rápido y tiene atajos que aquí se evitan desde el principio:
 
-| En lideris-v2 | Problema | En qa-reviewer |
-|---|---|---|
-| `(app)/+layout.svelte`: `isTurner` decide si se pinta el `AppShell` | El chrome depende de un `if` sobre la URL | Grupo propio con su layout (regla 1) |
-| `preorders/[id]/+layout.svelte`: `isQuoteWizardRoute` quita cabecera y tabs | Igual: condición sobre `pathname` | Grupo `(detail)` (regla 1) |
+| En lideris-v2                                                                                             | Problema                                      | En qa-reviewer                                  |
+| --------------------------------------------------------------------------------------------------------- | --------------------------------------------- | ----------------------------------------------- |
+| `(app)/+layout.svelte`: `isTurner` decide si se pinta el `AppShell`                                       | El chrome depende de un `if` sobre la URL     | Grupo propio con su layout (regla 1)            |
+| `preorders/[id]/+layout.svelte`: `isQuoteWizardRoute` quita cabecera y tabs                               | Igual: condición sobre `pathname`             | Grupo `(detail)` (regla 1)                      |
 | `(purchases)/+layout.svelte`: el store `moduleSidebar` registra el rail y `MAIN_VIEWS` lo oculta por ruta | Singleton de módulo más lista de rutas a mano | El layout pasa el snippet al template (regla 4) |
-| `DetailWithSidePanel.svelte` importa DTOs clínicos | El template queda atado a un dominio | Template puro (regla 2) |
-| Cabecera y tabs escritas dentro de `+layout.svelte` | El markup se duplica entre detalles | `DetailTemplate` reutilizable (regla 3) |
+| `DetailWithSidePanel.svelte` importa DTOs clínicos                                                        | El template queda atado a un dominio          | Template puro (regla 2)                         |
+| Cabecera y tabs escritas dentro de `+layout.svelte`                                                       | El markup se duplica entre detalles           | `DetailTemplate` reutilizable (regla 3)         |
 
 Lo que sí se copia: `PageLayout` y `ListTemplate` con regiones como snippets, el skeleton al cambiar de tab y los grupos `(app)`/`(auth)`.
 
@@ -270,7 +284,7 @@ Lo que sí se copia: `PageLayout` y `ListTemplate` con regiones como snippets, e
 
 - **Templates**: prueba de componente con snippets falsos (`createRawSnippet`). Verifica que las regiones opcionales no dejen huecos y que solo haya un contenedor con scroll.
 - **Guards**: prueba de servidor que llama la action sin permiso → 403, aunque el layout no haya corrido.
-- **E2E (Playwright)**: el visor no muestra tabs; un error en una tab conserva la cabecera; ir de una revisión a otra no arrastra el filtro.
+- **E2E (Playwright)**, en `e2e/`: login y errores, shell, listas, detalle, visor y ajustes. Corren contra el mock en un servidor propio (`pnpm test:e2e`, puerto 4317) y en serie, porque el mock guarda el estado en memoria.
 
 ## Checklist para un PR con rutas nuevas
 

@@ -1,0 +1,33 @@
+node_modules
+.DS_Store
+.env
+.env.*
+!.env.example
+.vercel
+.netlify
+.svelte-kit
+build
+dist
+/coverage
+playwright-report
+test-results
+
+# Imágenes reales de capturas (nunca al repo público)
+static/fixtures-private/
+
+# IDE
+.idea
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# codebase-memory-mcp
+.codebase-memory/
+.claude/

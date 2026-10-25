@@ -4,59 +4,125 @@ Base: `https://<host>/v1`. JSON en `camelCase`. La **fuente de verdad** es el Op
 
 ## Convenciones
 
-| Tema | Regla |
-|---|---|
-| Versionado | Prefijo `/v1`. Un cambio incompatible crea `/v2`; `v1` se mantiene mientras haya skills viejas. El manifiesto tiene su propia versión (`manifestVersion`). |
-| Respuesta | Envoltorio estándar `{ "messageKey": "reviews.created", "data": … }`. |
-| Errores | `{ "statusCode": 409, "messageKey": "reviews.stale_status", "message": "…", "details"?: … }`. Las claves i18n se documentan por endpoint. |
-| Paginación | `?page=1&limit=20`, con respuesta `{ items, pagination: { page, limit, total } }`. |
+| Tema         | Regla                                                                                                                                                        |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Versionado   | Prefijo `/v1`. Un cambio incompatible crea `/v2`; `v1` se mantiene mientras haya skills viejas. El manifiesto tiene su propia versión (`manifestVersion`).   |
+| Respuesta    | Envoltorio estándar `{ "messageKey": "reviews.created", "data": … }`.                                                                                        |
+| Errores      | `{ "statusCode": 409, "messageKey": "reviews.stale_status", "message": "…", "details"?: … }`. Las claves i18n se documentan por endpoint.                    |
+| Paginación   | `?page=1&limit=20`, con respuesta `{ items, pagination: { page, limit, total } }`.                                                                           |
 | Idempotencia | `Idempotency-Key` obligatorio en `POST /reviews` y `POST /reviews/:id/rounds` (la skill reintenta). La misma clave devuelve la misma respuesta durante 24 h. |
-| Concurrencia | Los comandos de estado se aplican con guarda de estado; si el estado cambió, responde `409`. |
-| Fechas | ISO 8601 UTC. |
+| Concurrencia | Los comandos de estado se aplican con guarda de estado; si el estado cambió, responde `409`.                                                                 |
+| Fechas       | ISO 8601 UTC.                                                                                                                                                |
 
 ## Autenticación
 
-| Cliente | Mecanismo | Alcance |
-|---|---|---|
-| Skill (dev) | `Authorization: Bearer qa_pat_…`, token personal por proyecto | Crear y publicar revisiones y rondas, leer el feedback de las suyas |
-| Plataforma (reviewer, autor) | Sesión: el server de SvelteKit hace login contra el API y guarda el access token en una cookie `httpOnly`. El navegador nunca ve el token. | Según rol en el proyecto |
-| GitHub | Webhook firmado (`X-Hub-Signature-256`) | `pull_request` closed/merged |
+| Cliente                      | Mecanismo                                                                                                                                  | Alcance                                                             |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------- |
+| Skill (dev)                  | `Authorization: Bearer qa_pat_…`, token personal por proyecto                                                                              | Crear y publicar revisiones y rondas, leer el feedback de las suyas |
+| Plataforma (reviewer, autor) | Sesión: el server de SvelteKit hace login contra el API y guarda el access token en una cookie `httpOnly`. El navegador nunca ve el token. | Según rol en el proyecto                                            |
+| GitHub                       | Webhook firmado (`X-Hub-Signature-256`)                                                                                                    | `pull_request` closed/merged                                        |
 
-Roles por proyecto: `admin` (gestiona miembros y tokens), `reviewer` (da veredictos) y `author` (crea revisiones y comenta).
+Roles y permisos: ver [users-and-roles.md](users-and-roles.md). Cada endpoint de la plataforma exige el permiso de la columna «Permiso»; el front lo verifica antes (UX) y el API lo vuelve a validar.
 
 ## Endpoints
 
+La columna «Puerto» es el método de `$lib/api/ports.ts` que lo consume; el adaptador `http` (`$lib/server/adapters/http`) hace la llamada y el `mock` reproduce las mismas reglas. Un endpoint sin puerto lo usa solo la skill.
+
+### Skill
+
+| Método | Ruta                    | Permiso          | Qué hace                                                                                                                               |
+| ------ | ----------------------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST` | `/reviews`              | `reviews:create` | Crea la revisión (o la ronda 1) desde el manifiesto. Responde `draft` con `uploads[]`: `{ screenKey, kind, url, headers, expiresAt }`. |
+| `POST` | `/reviews/:id/publish`  | `reviews:create` | Verifica que existan los objetos; `draft → open`. Emite `ReviewOpened`.                                                                |
+| `POST` | `/reviews/:id/rounds`   | `reviews:create` | Nueva ronda con manifiesto (mismo PR). Devuelve `uploads[]` solo de las pantallas nuevas o recapturadas.                               |
+| `GET`  | `/reviews/:id/feedback` | autor            | Para `/design-review status`: veredictos y comentarios abiertos de la última ronda enviada, en texto listo para la sesión.             |
+
 ### Revisiones
 
-| Método | Ruta | Quién | Qué hace |
-|---|---|---|---|
-| `POST` | `/reviews` | skill | Crea la revisión (o la ronda 1) desde el manifiesto. Responde `draft` con `uploads[]`: `{ screenKey, kind, url, headers, expiresAt }`. |
-| `POST` | `/reviews/:id/publish` | skill | Verifica que existan los objetos; `draft → open`. Emite `ReviewOpened`. |
-| `POST` | `/reviews/:id/rounds` | skill | Nueva ronda con manifiesto (mismo PR). Devuelve `uploads[]` solo de las pantallas nuevas o recapturadas. |
-| `GET` | `/reviews` | plataforma | Lista con filtros: `status`, `project`, `author`, `assignedToMe`, `q` (título, tarjeta, PR). |
-| `GET` | `/reviews/:id` | ambos | Detalle: snapshot, resumen, pantallas de la ronda actual con veredicto y URLs firmadas de lectura (TTL 15 min). |
-| `GET` | `/reviews/:id/feedback` | skill | Para `/design-review status`: veredictos y comentarios abiertos de la última ronda enviada, en texto listo para la sesión. |
+| Método  | Ruta                     | Permiso          | Puerto                | Qué hace                                                                                                                    |
+| ------- | ------------------------ | ---------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `GET`   | `/reviews`               | `reviews:read`   | `reviews.list`        | `?status[]&project&author&assignee&priority&overdue&q&sort=updated\|due\|priority&page&limit` → `PaginatedResponse<Review>` |
+| `GET`   | `/reviews/:id`           | `reviews:read`   | `reviews.get`         | Revisión con pantallas, rondas y URLs firmadas de lectura (TTL 15 min).                                                     |
+| `GET`   | `/reviews/:id/activity`  | `reviews:read`   | `reviews.activity`    | `ActivityEvent[]`, más reciente primero.                                                                                    |
+| `PUT`   | `/reviews/:id/assignees` | `reviews:assign` | `reviews.assign`      | `{ assignees: userId[] }`. Solo diseñadores y líderes del proyecto.                                                         |
+| `PATCH` | `/reviews/:id`           | `reviews:assign` | `reviews.setPriority` | `{ priority }`.                                                                                                             |
+| `POST`  | `/reviews/:id/reopen`    | `reviews:reopen` | `reviews.reopen`      | `{ reason }`. Anula el último envío y vuelve a `in_review`; avisa al autor.                                                 |
 
 ### Feedback
 
-| Método | Ruta | Quién | Qué hace |
-|---|---|---|---|
-| `PUT` | `/reviews/:id/screens/:screenKey/verdict` | reviewer | `{ verdict }`. Pasa a `in_review` si estaba `open`. |
-| `GET` | `/reviews/:id/screens/:screenKey/comments` | ambos | Hilo de la pantalla (todas las rondas). |
-| `POST` | `/reviews/:id/screens/:screenKey/comments` | ambos | `{ body, anchor?: { x, y, w, h } }`, con el ancla en fracciones 0–1 de la imagen `after`. |
-| `PATCH` | `/comments/:commentId` | autor del comentario | Editar o `resolved: true`. |
-| `POST` | `/reviews/:id/submit` | reviewer | Cierra los veredictos de la ronda: `approved` o `changes_requested`. Emite `ReviewSubmitted`. |
+| Método   | Ruta                                       | Permiso                                    | Puerto                    | Qué hace                                                                                                                 |
+| -------- | ------------------------------------------ | ------------------------------------------ | ------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `PUT`    | `/reviews/:id/screens/:screenKey/verdict`  | `verdicts:set` (no el autor)               | `feedback.setVerdict`     | `{ verdict: pending\|approved\|changes_requested }`. Pasa a `in_review` si estaba `open`. `409` si la ronda ya se envió. |
+| `POST`   | `/reviews/:id/submit`                      | `verdicts:set` (no el autor)               | `feedback.submit`         | `{ body? }`. Cierra la ronda: `approved` si todo está aprobado, si no `changes_requested`. Emite `ReviewSubmitted`.      |
+| `GET`    | `/reviews/:id/comments`                    | `reviews:read`                             | `feedback.comments`       | Todos los comentarios de la revisión (todas las rondas).                                                                 |
+| `GET`    | `/reviews/:id/screens/:screenKey/comments` | `reviews:read`                             | `feedback.comments`       | Hilo de una pantalla.                                                                                                    |
+| `POST`   | `/reviews/:id/screens/:screenKey/comments` | `comments:create`                          | `feedback.addComment`     | `{ body, anchor: { x, y } \| null, el: ElementRef \| null }`, ancla en fracciones 0–1 de la captura.                     |
+| `POST`   | `/comments/:id/replies`                    | `comments:create`                          | `feedback.reply`          | `{ body }`.                                                                                                              |
+| `PATCH`  | `/comments/:id`                            | `comments:resolve`                         | `feedback.resolveComment` | `{ resolved }`.                                                                                                          |
+| `PUT`    | `/comments/:id/follow-up`                  | `verdicts:set`                             | `feedback.setFollowUp`    | `{ followUp: resolved\|still }`: respuesta a «¿Quedó resuelto en la ronda N?».                                           |
+| `DELETE` | `/comments/:id`                            | autor del comentario o `comments:moderate` | `feedback.deleteComment`  | `204`.                                                                                                                   |
 
-### Proyectos y acceso
+### Sesión y cuenta
 
-| Método | Ruta | Qué hace |
-|---|---|---|
-| `GET` | `/projects` | Proyectos del usuario |
-| `GET/POST/DELETE` | `/projects/:id/members` | Gestión de miembros y roles (admin) |
-| `POST` | `/tokens` | Crea un token personal para la skill; el valor se muestra **una sola vez** |
-| `GET` · `DELETE` | `/tokens`, `/tokens/:id` | Listar y revocar |
-| `POST` | `/auth/login` · `/auth/refresh` · `/auth/logout` | Sesión de la plataforma |
-| `POST` | `/integrations/github/webhook` | Cierre de revisiones al cerrar el PR |
+| Método  | Ruta                         | Permiso | Puerto                      | Qué hace                                                                                                    |
+| ------- | ---------------------------- | ------- | --------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `POST`  | `/auth/login`                | —       | `auth.login`                | `{ email, password }` → `{ token, user }`. El server de SvelteKit guarda el token en una cookie `httpOnly`. |
+| `POST`  | `/auth/logout`               | sesión  | `auth.logout`               | Revoca la sesión actual.                                                                                    |
+| `POST`  | `/auth/logout-all`           | sesión  | `auth.logoutEverywhere`     | Revoca todas las sesiones del usuario (no los tokens de la skill).                                          |
+| `POST`  | `/auth/recovery`             | —       | `auth.requestRecovery`      | `{ email }`. Siempre `204`, exista o no el correo.                                                          |
+| `GET`   | `/auth/recovery/:token`      | —       | `auth.recoveryInfo`         | `{ status: valid\|expired\|used }`.                                                                         |
+| `POST`  | `/auth/recovery/:token`      | —       | `auth.resetPassword`        | `{ password }`. `410` si venció o se usó.                                                                   |
+| `GET`   | `/invitations/:token`        | —       | `auth.inviteInfo`           | `InviteInfo` con `status: valid\|expired\|used\|revoked`.                                                   |
+| `POST`  | `/invitations/:token/accept` | —       | `auth.acceptInvite`         | `{ name, password }` → `{ token, user }`.                                                                   |
+| `GET`   | `/me`                        | sesión  | `auth.me`                   | `SessionUser` con membresías. Los permisos se derivan en el front.                                          |
+| `PATCH` | `/me`                        | sesión  | `auth.updateProfile`        | `{ name }`.                                                                                                 |
+| `PUT`   | `/me/password`               | sesión  | `auth.changePassword`       | `{ current, next }`. `400 auth.wrong_password` si la actual no coincide; cierra las demás sesiones.         |
+| `GET`   | `/me/notification-prefs`     | sesión  | `notifications.prefs`       | `NotificationPrefs`: qué llega también por correo.                                                          |
+| `PUT`   | `/me/notification-prefs`     | sesión  | `notifications.updatePrefs` | El objeto completo.                                                                                         |
+
+### Notificaciones
+
+| Método | Ruta                          | Puerto                      | Qué hace                                  |
+| ------ | ----------------------------- | --------------------------- | ----------------------------------------- |
+| `GET`  | `/notifications`              | `notifications.list`        | `?unread&mentions`, más reciente primero. |
+| `GET`  | `/notifications/unread-count` | `notifications.unreadCount` | Número para la campana.                   |
+| `POST` | `/notifications/:id/read`     | `notifications.markRead`    | `204`.                                    |
+| `POST` | `/notifications/read-all`     | `notifications.markAllRead` | `204`.                                    |
+
+### Organización, proyectos y miembros
+
+| Método   | Ruta                            | Permiso                                  | Puerto                       | Qué hace                                                                                                                          |
+| -------- | ------------------------------- | ---------------------------------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `GET`    | `/organization`                 | sesión                                   | `directory.organization`     | `{ id, name }`.                                                                                                                   |
+| `GET`    | `/users`                        | `users:invite`                           | `directory.listUsers`        | Usuarios de la organización.                                                                                                      |
+| `PATCH`  | `/users/:id`                    | `users:invite`                           | `directory.setUserStatus`    | `{ status }`. Desactivar revoca sus tokens. `409` sobre uno mismo o el owner.                                                     |
+| `PATCH`  | `/users/:id`                    | `users:invite` · `org:manage` para owner | `directory.setOrgRole`       | `{ orgRole }`.                                                                                                                    |
+| `GET`    | `/invitations`                  | `users:invite`                           | `directory.listInvitations`  | Con `status` calculado.                                                                                                           |
+| `POST`   | `/invitations`                  | `users:invite`                           | `directory.invite`           | `{ email, role, projects: Membership[] }`. `409` si el correo ya existe o tiene una invitación vigente. Envía el correo (7 días). |
+| `DELETE` | `/invitations/:id`              | `users:invite`                           | `directory.revokeInvitation` | `204`.                                                                                                                            |
+| `GET`    | `/projects`                     | sesión                                   | `directory.listProjects`     | Proyectos visibles (todos para owner y admin).                                                                                    |
+| `GET`    | `/projects/:id`                 | `reviews:read`                           | `directory.getProject`       | `404` si no lo ve.                                                                                                                |
+| `PATCH`  | `/projects/:id`                 | `projects:configure`                     | `directory.updateProject`    | `ProjectPatch`: `name`, `slaDays`, `strategy`, `moduleRules`, `integrations`, `maskSelectors`, `designRules`.                     |
+| `GET`    | `/projects/:id/members`         | `reviews:read`                           | `directory.listMembers`      | `ProjectMember[]`.                                                                                                                |
+| `POST`   | `/projects/:id/members`         | `members:manage`                         | `directory.addMember`        | `{ userId, role }`. `409` si ya es miembro.                                                                                       |
+| `PATCH`  | `/projects/:id/members/:userId` | `members:manage`                         | `directory.setMemberRole`    | `{ role }`.                                                                                                                       |
+| `DELETE` | `/projects/:id/members/:userId` | `members:manage`                         | `directory.removeMember`     | `409` sobre uno mismo.                                                                                                            |
+| `GET`    | `/audit`                        | `users:invite`                           | `directory.audit`            | `?type&actor&page&limit` → `PaginatedResponse<AuditEvent>`.                                                                       |
+
+### Tokens de la skill
+
+| Método   | Ruta          | Permiso                     | Puerto          | Qué hace                                                                              |
+| -------- | ------------- | --------------------------- | --------------- | ------------------------------------------------------------------------------------- |
+| `GET`    | `/tokens`     | sesión                      | `tokens.list`   | Tokens propios, solo con `prefix`.                                                    |
+| `POST`   | `/tokens`     | `tokens:own` en el proyecto | `tokens.create` | `{ projectId, label }` → `{ token, secret }`. El secreto se entrega **una sola vez**. |
+| `DELETE` | `/tokens/:id` | dueño                       | `tokens.revoke` | `204`.                                                                                |
+
+### Métricas e integraciones
+
+| Método | Ruta                           | Permiso        | Puerto             | Qué hace                                                                                         |
+| ------ | ------------------------------ | -------------- | ------------------ | ------------------------------------------------------------------------------------------------ |
+| `GET`  | `/reports/overview`            | `reports:view` | `reports.overview` | `?project&from&to` → `ReportsOverview` (KPIs, semanas, carga por diseñador, ajustes por módulo). |
+| `POST` | `/integrations/github/webhook` | firma          | —                  | Cierre de revisiones al cerrar o fusionar el PR.                                                 |
 
 ### Salud
 
@@ -64,10 +130,10 @@ Roles por proyecto: `admin` (gestiona miembros y tokens), `reviewer` (da veredic
 
 ## Eventos (outbox)
 
-| Evento | Cuándo | Consumidores |
-|---|---|---|
-| `ReviewOpened` | `publish` o nueva ronda | Comentario en el PR y la tarjeta: «Revisión de UI lista: QR-0007 (ronda 2)» + link |
-| `ReviewSubmitted` | `submit` | Comentario en el PR y la tarjeta con el resumen por pantalla |
-| `ReviewClosed` | PR cerrado | Ninguno en el MVP (métricas después) |
+| Evento            | Cuándo                  | Consumidores                                                                       |
+| ----------------- | ----------------------- | ---------------------------------------------------------------------------------- |
+| `ReviewOpened`    | `publish` o nueva ronda | Comentario en el PR y la tarjeta: «Revisión de UI lista: QR-0007 (ronda 2)» + link |
+| `ReviewSubmitted` | `submit`                | Comentario en el PR y la tarjeta con el resumen por pantalla                       |
+| `ReviewClosed`    | PR cerrado              | Ninguno en el MVP (métricas después)                                               |
 
 Cada evento lleva `eventId` (idempotencia), `occurredAt` y el snapshot que necesita el consumidor.

@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" font-family="ui-sans-serif, system-ui, sans-serif">
+  <rect width="1280" height="720" fill="#ffffff"/>
+  <rect x="0" y="55" width="1280" height="1" fill="#e4e4e7"/>
+  <rect x="24" y="16" width="180" height="22" rx="6" fill="#f4f4f5"/>
+  <text x="24" y="46" font-size="14" fill="#18181b" font-weight="600">Pre-orden</text>
+
+  <rect x="24" y="76" width="220" height="36" rx="6" fill="#18181b"/>
+  <text x="44" y="99" font-size="13" fill="#ffffff">Productos / Servicios</text>
+  <rect x="252" y="76" width="160" height="36" rx="6" fill="#ffffff" stroke="#e4e4e7"/>
+  <text x="272" y="99" font-size="13" fill="#71717a">Cotizaciones</text>
+
+  <rect x="24" y="128" width="1232" height="40" rx="8" fill="#eff6ff"/>
+  <rect x="24" y="128" width="4" height="40" fill="#3b82f6"/>
+  <text x="40" y="152" font-size="13" fill="#1d4ed8">Modo edición: ajusta cada cantidad con el stepper.</text>
+
+  <rect x="24" y="184" width="320" height="36" rx="6" fill="#ffffff" stroke="#e4e4e7"/>
+  <text x="40" y="207" font-size="13" fill="#a1a1aa">Buscar productos</text>
+
+  <rect x="24" y="240" width="1232" height="96" rx="8" fill="#ffffff" stroke="#3b82f6" stroke-width="1.5"/>
+  <rect x="40" y="260" width="64" height="16" rx="4" fill="#f4f4f5"/>
+  <text x="120" y="273" font-size="13" fill="#18181b">Producto A</text>
+  <text x="120" y="298" font-size="12" fill="#71717a">Solicitada: 10</text>
+  <rect x="1080" y="268" width="32" height="28" rx="6" fill="#f4f4f5"/>
+  <text x="1090" y="287" font-size="14" fill="#18181b">−</text>
+  <rect x="1118" y="268" width="48" height="28" rx="6" fill="#ffffff" stroke="#e4e4e7"/>
+  <text x="1136" y="287" font-size="13" fill="#18181b">7</text>
+  <rect x="1172" y="268" width="32" height="28" rx="6" fill="#f4f4f5"/>
+  <text x="1182" y="287" font-size="14" fill="#18181b">+</text>
+
+  <rect x="24" y="352" width="1232" height="96" rx="8" fill="#ffffff" stroke="#3b82f6" stroke-width="1.5"/>
+  <rect x="40" y="372" width="64" height="16" rx="4" fill="#f4f4f5"/>
+  <text x="120" y="385" font-size="13" fill="#18181b">Producto B</text>
+  <text x="120" y="410" font-size="12" fill="#71717a">Solicitada: 17</text>
+  <rect x="1080" y="380" width="32" height="28" rx="6" fill="#f4f4f5"/>
+  <text x="1090" y="399" font-size="14" fill="#18181b">−</text>
+  <rect x="1118" y="380" width="48" height="28" rx="6" fill="#ffffff" stroke="#e4e4e7"/>
+  <text x="1136" y="399" font-size="13" fill="#18181b">12</text>
+  <rect x="1172" y="380" width="32" height="28" rx="6" fill="#f4f4f5"/>
+  <text x="1182" y="399" font-size="14" fill="#18181b">+</text>
+
+  <rect x="0" y="600" width="1280" height="120" fill="#ffffff"/>
+  <rect x="0" y="600" width="1280" height="1" fill="#e4e4e7"/>
+  <text x="24" y="630" font-size="13" fill="#18181b">2 cambios</text>
+  <rect x="24" y="652" width="240" height="16" rx="4" fill="#f4f4f5"/>
+  <rect x="1080" y="634" width="80" height="36" rx="6" fill="#ffffff" stroke="#e4e4e7"/>
+  <text x="1096" y="657" font-size="13" fill="#71717a">Cancelar</text>
+  <rect x="1168" y="634" width="88" height="36" rx="6" fill="#18181b"/>
+  <text x="1184" y="657" font-size="13" fill="#ffffff">Guardar</text>
+</svg>

@@ -1,0 +1,3 @@
+pnpm lint-staged
+pnpm exec svelte-kit sync
+pnpm exec svelte-check --threshold error --fail-on-warnings

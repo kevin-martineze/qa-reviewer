@@ -2,18 +2,18 @@
 
 ## Lenguaje común
 
-| Término | Significado |
-|---|---|
-| **Proyecto** | Un producto revisado (p. ej. Lideris). Conecta un repo de GitHub y un proyecto de Plane. |
-| **Revisión** (`Review`) | El paquete de una feature: PR, tarjeta, rama y sus pantallas. Una por PR. |
-| **Ronda** (`round`) | Cada envío del dev dentro de la misma revisión. La ronda 1 es la primera; tras un pedido de ajustes, la siguiente sube solo lo que cambió. |
-| **Pantalla** (`Screen`) | Un estado visual a revisar: ruta + estado + tamaño (p. ej. «Modo edición, 1280×720»). |
-| **Captura** (`Capture`) | Imagen `before` (base del PR) o `after` (rama) de una pantalla. `before` es opcional (pantallas nuevas). |
-| **Notas** | Lo que la skill redacta por pantalla: `changes` (qué ver) y `questions` (preguntas para UI). |
-| **Veredicto** (`verdict`) | `pending`, `approved` o `changes_requested`, por pantalla y por ronda. |
-| **Comentario** | Texto de un reviewer sobre una pantalla, opcionalmente anclado a una zona de la imagen. |
-| **Envío** (`submission`) | El acto de «Enviar revisión»: congela los veredictos de la ronda y notifica una sola vez. |
-| **Estado no capturado** | Estado descrito en texto que no se pudo capturar (guardando, error, toast…). |
+| Término                   | Significado                                                                                                                                |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Proyecto**              | Un producto revisado (p. ej. Lideris). Conecta un repo de GitHub y un proyecto de Plane.                                                   |
+| **Revisión** (`Review`)   | El paquete de una feature: PR, tarjeta, rama y sus pantallas. Una por PR.                                                                  |
+| **Ronda** (`round`)       | Cada envío del dev dentro de la misma revisión. La ronda 1 es la primera; tras un pedido de ajustes, la siguiente sube solo lo que cambió. |
+| **Pantalla** (`Screen`)   | Un estado visual a revisar: ruta + estado + tamaño (p. ej. «Modo edición, 1280×720»).                                                      |
+| **Captura** (`Capture`)   | Imagen `before` (base del PR) o `after` (rama) de una pantalla. `before` es opcional (pantallas nuevas).                                   |
+| **Notas**                 | Lo que la skill redacta por pantalla: `changes` (qué ver) y `questions` (preguntas para UI).                                               |
+| **Veredicto** (`verdict`) | `pending`, `approved` o `changes_requested`, por pantalla y por ronda.                                                                     |
+| **Comentario**            | Texto de un reviewer sobre una pantalla, opcionalmente anclado a una zona de la imagen.                                                    |
+| **Envío** (`submission`)  | El acto de «Enviar revisión»: congela los veredictos de la ronda y notifica una sola vez.                                                  |
+| **Estado no capturado**   | Estado descrito en texto que no se pudo capturar (guardando, error, toast…).                                                               |
 
 ## Agregados
 
@@ -46,16 +46,16 @@ Project 1───* Review 1───* Screen 1───* Capture
  (cualquiera) ───────▶ closed
 ```
 
-| Transición | Quién | Guarda |
-|---|---|---|
-| `draft → open` | skill (`publish`) | Todas las capturas declaradas existen en S3 |
-| `draft → expired` | cron | 24 h sin publicar; se borran los objetos subidos |
-| `open → in_review` | reviewer | Primer veredicto o comentario de la ronda |
-| `in_review → approved` | reviewer (`submit`) | Todas las pantallas de la ronda `approved` |
+| Transición                      | Quién               | Guarda                                                        |
+| ------------------------------- | ------------------- | ------------------------------------------------------------- |
+| `draft → open`                  | skill (`publish`)   | Todas las capturas declaradas existen en S3                   |
+| `draft → expired`               | cron                | 24 h sin publicar; se borran los objetos subidos              |
+| `open → in_review`              | reviewer            | Primer veredicto o comentario de la ronda                     |
+| `in_review → approved`          | reviewer (`submit`) | Todas las pantallas de la ronda `approved`                    |
 | `in_review → changes_requested` | reviewer (`submit`) | Al menos una pantalla `changes_requested` y ninguna `pending` |
-| `changes_requested → open` | skill (nueva ronda) | Manifiesto de la misma rama; `round + 1` |
-| `approved → open` | skill (nueva ronda) | El dev cambió UI después de la aprobación |
-| `* → closed` | webhook de GitHub | PR merged o closed |
+| `changes_requested → open`      | skill (nueva ronda) | Manifiesto de la misma rama; `round + 1`                      |
+| `approved → open`               | skill (nueva ronda) | El dev cambió UI después de la aprobación                     |
+| `* → closed`                    | webhook de GitHub   | PR merged o closed                                            |
 
 La tabla vive en código como **máquina de estados pura** (`review-state.machine.ts`). El servicio la aplica con `findOneAndUpdate({ _id, status })`: un comando con estado viejo recibe `409` en lugar de pisar el cambio de otro.
 
@@ -95,7 +95,10 @@ Es el **contrato** entre la skill y el API. Va versionado (`manifestVersion`): e
   "context": "Pre-orden · pestaña Productos / Servicios",
   "summary": {
     "steps": [
-      { "title": "Editar", "body": "El usuario pulsa «Editar cantidades». Todas las filas pasan a stepper a la vez." },
+      {
+        "title": "Editar",
+        "body": "El usuario pulsa «Editar cantidades». Todas las filas pasan a stepper a la vez."
+      },
       { "title": "Guardar", "body": "Un solo «Guardar cambios» envía todo junto." }
     ],
     "rules": ["Rango permitido por fila: de 1 hasta la cantidad solicitada."]
@@ -108,7 +111,12 @@ Es el **contrato** entre la skill y el API. Va versionado (`manifestVersion`): e
       "route": "/preorders/[id]/products-services",
       "viewport": { "width": 1280, "height": 720 },
       "captures": {
-        "after": { "key": "c_cambios.png", "contentType": "image/png", "bytes": 182344, "sha256": "…" },
+        "after": {
+          "key": "c_cambios.png",
+          "contentType": "image/png",
+          "bytes": 182344,
+          "sha256": "…"
+        },
         "before": null
       },
       "changes": ["Fila modificada: borde en color primario y «Antes: N» bajo el stepper."],
@@ -116,7 +124,10 @@ Es el **contrato** entre la skill y el API. Va versionado (`manifestVersion`): e
     }
   ],
   "notCaptured": [
-    { "title": "Guardado", "body": "Toast «Cantidad aprobada actualizada» y se sale del modo edición." }
+    {
+      "title": "Guardado",
+      "body": "Toast «Cantidad aprobada actualizada» y se sale del modo edición."
+    }
   ],
   "privacy": { "masked": true, "dataset": "qa-fixtures" },
   "generator": { "name": "design-review-skill", "version": "0.1.0" }

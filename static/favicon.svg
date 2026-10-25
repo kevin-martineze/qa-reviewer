@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <style>
+    .ink { stroke: #0f172a; }
+    .bg { fill: #ffffff; }
+    .brand { stroke: #2a78d6; }
+    @media (prefers-color-scheme: dark) {
+      .ink { stroke: #e2e8f0; }
+      .bg { fill: #0f172a; }
+      .brand { stroke: #3987e5; }
+    }
+  </style>
+  <path class="ink" d="M19 4H11a7 7 0 0 0-7 7v10a7 7 0 0 0 7 7h10a7 7 0 0 0 7-7v-6" stroke-width="3" />
+  <path class="brand" d="M10 15.5l5 5L26 6" stroke-width="4" />
+  <circle class="bg ink" cx="19" cy="21" r="3.6" stroke-width="2.4" />
+  <path class="ink" d="M21.8 23.8 25 27" stroke-width="2.4" />
+</svg>
