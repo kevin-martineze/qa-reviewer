@@ -1,0 +1,73 @@
+{
+  "name": "qa-reviewer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.18.0",
+    "@internationalized/date": "^3.12.4",
+    "@lucide/svelte": "^1.61.0",
+    "@playwright/test": "^1.50.0",
+    "@sveltejs/adapter-vercel": "^6.3.3",
+    "@sveltejs/kit": "^2.16.0",
+    "@sveltejs/vite-plugin-svelte": "^5.0.0",
+    "@tailwindcss/vite": "^4.0.0",
+    "@types/node": "^22.0.0",
+    "eslint": "^9.18.0",
+    "eslint-config-prettier": "^10.0.1",
+    "eslint-plugin-prettier": "^5.5.6",
+    "eslint-plugin-svelte": "^3.0.0",
+    "globals": "^15.14.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.4.0",
+    "prettier": "^3.4.2",
+    "prettier-plugin-svelte": "^3.3.3",
+    "svelte": "^5.0.0",
+    "svelte-check": "^4.0.0",
+    "svelte-eslint-parser": "^1.0.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5.5.0",
+    "typescript-eslint": "^8.20.0",
+    "vite": "^6.0.0",
+    "vitest": "^3.0.0"
+  },
+  "dependencies": {
+    "@fontsource-variable/geist": "^5.1.0",
+    "@fontsource-variable/geist-mono": "^5.1.0",
+    "bits-ui": "^2.20.0",
+    "clsx": "^2.1.1",
+    "mode-watcher": "^1.1.0",
+    "svelte-sonner": "^1.2.0",
+    "tailwind-merge": "^3.0.0",
+    "tailwind-variants": "^3.3.0",
+    "tw-animate-css": "^1.2.0"
+  },
+  "lint-staged": {
+    "*.{ts,svelte,svelte.ts}": [
+      "prettier --write",
+      "eslint --max-warnings 0 --no-warn-ignored --fix",
+      "bash -c '\".husky/check-patterns.sh\" \"$@\"' --"
+    ],
+    "*.{js,mjs,json,css,md}": [
+      "prettier --write"
+    ]
+  },
+  "packageManager": "pnpm@10.30.0+sha512.2b5753de015d480eeb88f5b5b61e0051f05b4301808a82ec8b840c9d2adf7748eb352c83f5c1593ca703ff1017295bc3fdd3119abb9686efc96b9fcb18200937"
+}
