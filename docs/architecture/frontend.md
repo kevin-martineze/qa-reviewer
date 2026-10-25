@@ -112,6 +112,7 @@ El árbol de rutas está en [layouts.md](layouts.md#árbol-de-rutas).
 ## Decisiones de UI
 
 - **Rango objetivo 1280–1920**: el reviewer trabaja en escritorio. El visor prioriza el ancho de la captura y limita el lienzo al ancho del viewport capturado.
+- **Bloqueo bajo `lg`**: bajo 1024 px no se muestran pantallas (login, app y errores incluidos); el layout raíz enseña `DesktopOnly` («Disponible solo en computador») y oculta `{@render children()}` con `hidden lg:contents`. Solo CSS, sin JS ni `matchMedia`, para que el SSR no parpadee.
 - **Imágenes**: en el API, URLs firmadas con TTL de 15 min. Pendiente al integrar: si una expira, el visor debe volver a cargar con `invalidate('review:<id>')` en vez de mostrar una imagen rota.
 - **Anclas**: fracciones 0–1 de la captura de la ronda actual (independientes del zoom). El componente se detecta en el server a partir de `screen.elements`, no lo manda el navegador.
 - **Atajos del visor**: `A` aprobar, `R` pedir ajuste (pulsar el activo lo devuelve a pendiente), `C` comentar, `I` inspector, `D` diff, `←`/`→` o `J`/`K` pantallas, `T` alternar en modo «Alternar», `Esc` cancelar. Se ignoran dentro de inputs y con un diálogo abierto.
