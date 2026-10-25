@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { can, permissionsOf } from './permissions';
+import { can, permissionGrantedBy, permissionLabel, permissionsOf } from './permissions';
 
 describe('permissionsOf', () => {
   it('owner suma project_admin implícito', () => {
@@ -46,5 +46,31 @@ describe('can', () => {
     const perms = permissionsOf('member', 'designer');
     expect(can(perms, 'verdicts:set')).toBe(true);
     expect(can(perms, 'reports:view')).toBe(false);
+  });
+});
+
+describe('permissionLabel', () => {
+  it('traduce la clave a texto en español', () => {
+    expect(permissionLabel('reports:view')).toBe('Ver métricas');
+    expect(permissionLabel('projects:configure')).toBe('Configurar el proyecto');
+  });
+
+  it('devuelve la clave si no la conoce', () => {
+    expect(permissionLabel('no:existe')).toBe('no:existe');
+  });
+});
+
+describe('permissionGrantedBy', () => {
+  it('nombra al admin cuando solo el admin puede', () => {
+    expect(permissionGrantedBy('users:invite')).toContain('admin de la organización');
+  });
+
+  it('nombra al project_admin cuando solo él puede', () => {
+    expect(permissionGrantedBy('verdicts:set')).toContain('project_admin');
+  });
+
+  it('nombra ambos cuando los dos pueden', () => {
+    expect(permissionGrantedBy('projects:configure')).toContain('admin de la organización');
+    expect(permissionGrantedBy('projects:configure')).toContain('project_admin');
   });
 });

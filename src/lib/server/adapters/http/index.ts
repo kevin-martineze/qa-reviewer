@@ -22,6 +22,11 @@ export function httpGateway(locals: App.Locals): Gateways {
       login: () => notImplemented(),
       logout: () => notImplemented(),
       me: () => notImplemented(),
+      inviteInfo: () => notImplemented(),
+      acceptInvite: () => notImplemented(),
+      requestRecovery: () => notImplemented(),
+      recoveryInfo: () => notImplemented(),
+      resetPassword: () => notImplemented(),
     },
     directory: {
       listProjects: () => notImplemented(),

@@ -35,6 +35,7 @@
     "eslint-plugin-prettier": "^5.5.6",
     "eslint-plugin-svelte": "^3.0.0",
     "globals": "^15.14.0",
+    "happy-dom": "^21.0.4",
     "husky": "^9.1.7",
     "lint-staged": "^15.4.0",
     "prettier": "^3.4.2",
@@ -55,9 +56,11 @@
     "clsx": "^2.1.1",
     "mode-watcher": "^1.1.0",
     "svelte-sonner": "^1.2.0",
+    "sveltekit-superforms": "^3.0.0",
     "tailwind-merge": "^3.0.0",
     "tailwind-variants": "^3.3.0",
-    "tw-animate-css": "^1.2.0"
+    "tw-animate-css": "^1.2.0",
+    "zod": "^4.6.7"
   },
   "lint-staged": {
     "*.{ts,svelte,svelte.ts}": [

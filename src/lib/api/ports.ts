@@ -5,10 +5,12 @@ import type {
   Anchor,
   ApiToken,
   Comment,
+  InviteInfo,
   Notification,
   PaginatedResponse,
   Project,
   ProjectMember,
+  RecoveryInfo,
   Review,
   ReviewStatus,
   SessionUser,
@@ -48,6 +50,11 @@ export interface AuthGateway {
   login(email: string, password: string): Promise<Result<SessionUser>>;
   logout(): Promise<Result<void>>;
   me(): Promise<Result<SessionUser>>;
+  inviteInfo(token: string): Promise<Result<InviteInfo>>;
+  acceptInvite(token: string, name: string, password: string): Promise<Result<SessionUser>>;
+  requestRecovery(email: string): Promise<Result<void>>;
+  recoveryInfo(token: string): Promise<Result<RecoveryInfo>>;
+  resetPassword(token: string, password: string): Promise<Result<void>>;
 }
 
 export interface DirectoryGateway {

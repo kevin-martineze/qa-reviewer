@@ -1,7 +1,13 @@
 import { fail, redirect } from '@sveltejs/kit';
-import type { Actions } from './$types';
+import type { Actions, PageServerLoad } from './$types';
 import { gateway } from '$lib/server/gateway';
 import { SESSION_COOKIE } from '$lib/server/session';
+
+export const load: PageServerLoad = async () => {
+  return {
+    meta: { title: 'Inicia sesión', description: 'Entra para revisar las pantallas.' },
+  };
+};
 
 export const actions: Actions = {
   default: async ({ request, cookies, locals }) => {

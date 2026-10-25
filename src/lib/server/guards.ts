@@ -10,7 +10,11 @@ export function requireUser(locals: App.Locals): SessionUser {
 export function requirePermission(locals: App.Locals, permission: Permission): SessionUser {
   const user = requireUser(locals);
   if (!locals.permissions.has(permission)) {
-    throw error(403, 'No tienes permiso para acceder a esta página.');
+    throw error(403, {
+      message: 'No tienes permiso para acceder a esta página.',
+      code: 'forbidden',
+      permission,
+    });
   }
   return user;
 }

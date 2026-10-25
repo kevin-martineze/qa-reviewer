@@ -43,6 +43,23 @@ export interface ProjectMember {
   role: ProjectRole;
 }
 
+/* ── Invitación y recuperación ──────────────────────────────────────── */
+
+export type InviteStatus = 'valid' | 'expired' | 'used' | 'revoked';
+export type RecoveryStatus = 'valid' | 'expired' | 'used';
+
+export interface InviteInfo {
+  status: InviteStatus;
+  org: string;
+  inviter: string;
+  role: OrgRole;
+  projects: string[];
+}
+
+export interface RecoveryInfo {
+  status: RecoveryStatus;
+}
+
 /* ── Revisión ────────────────────────────────────────────────────────── */
 
 export type ReviewStatus =

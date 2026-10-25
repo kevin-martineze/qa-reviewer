@@ -72,9 +72,18 @@ export default tseslint.config(
       'svelte/prefer-svelte-reactivity': 'warn',
     },
   },
+  // molecules/templates reciben hrefs ya resueltos (resolve()) desde el layout o la página;
+  // la regla sigue activa en routes/** y organisms/**.
+  {
+    files: ['src/lib/components/molecules/**'],
+    rules: {
+      'svelte/no-navigation-without-resolve': 'off',
+    },
+  },
   {
     files: ['src/lib/components/templates/**'],
     rules: {
+      'svelte/no-navigation-without-resolve': 'off',
       'no-restricted-imports': [
         'error',
         {

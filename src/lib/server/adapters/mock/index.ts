@@ -2,9 +2,19 @@
 // permisos y las reglas de negocio (403/409, el autor no da veredicto).
 import { err, ok, type Result } from '$lib/api/result';
 import type { Gateways, ReviewFilters } from '$lib/api/ports';
-import type { Anchor, Comment, Review, SessionUser, Verdict } from '$lib/api/types';
+import type {
+  Anchor,
+  Comment,
+  InviteStatus,
+  RecoveryStatus,
+  Review,
+  SessionUser,
+  User,
+  Verdict,
+} from '$lib/api/types';
 import type { Permission } from '$lib/domain/permissions';
-import { DEMO_PASSWORD, MEMBERS, PROJECTS, SEED_TOKENS, USERS } from './seeds';
+import { DEMO_PASSWORD, MEMBERSHIPS, ORG, PROJECTS, SEED_TOKENS } from './seeds';
+import type { InviteSeed } from './seeds';
 import { store } from './store';
 
 function requireUser(locals: App.Locals): Result<SessionUser> {
@@ -25,6 +35,21 @@ function findReview(id: string): Result<Review> {
   const review = store.reviews.find((r) => r.id === id);
   if (!review) return err(404, 'reviews.not_found', 'Revisión no encontrada.');
   return ok(review);
+}
+
+function inviteStatus(invite: InviteSeed): InviteStatus {
+  if (invite.revoked) return 'revoked';
+  if (invite.used) return 'used';
+  if (new Date(invite.expiresAt).getTime() < Date.now()) return 'expired';
+  return 'valid';
+}
+
+function projectNames(ids: string[]): string[] {
+  return ids.map((id) => PROJECTS.find((p) => p.id === id)?.name ?? id);
+}
+
+function userName(id: string): string {
+  return store.users[id]?.name ?? id;
 }
 
 export function mockGateway(locals: App.Locals): Gateways {
@@ -178,7 +203,7 @@ export function mockGateway(locals: App.Locals): Gateways {
 
     auth: {
       async login(email: string, password: string) {
-        const user = Object.values(USERS).find((u) => u.email === email);
+        const user = Object.values(store.users).find((u) => u.email === email);
         if (!user || password !== DEMO_PASSWORD) {
           return err(401, 'auth.invalid', 'Correo o contraseña incorrectos.');
         }
@@ -199,6 +224,63 @@ export function mockGateway(locals: App.Locals): Gateways {
       async me() {
         return requireUser(locals);
       },
+      async inviteInfo(token: string) {
+        const invite = store.invites.find((i) => i.token === token);
+        if (!invite) return err(404, 'invite.not_found', 'Invitación no encontrada.');
+        return ok({
+          status: inviteStatus(invite),
+          org: ORG.name,
+          inviter: userName(invite.inviter),
+          role: invite.role,
+          projects: projectNames(invite.projects),
+        });
+      },
+      async acceptInvite(token: string, name: string, password: string) {
+        void password;
+        const invite = store.invites.find((i) => i.token === token);
+        if (!invite) return err(404, 'invite.not_found', 'Invitación no encontrada.');
+        const status = inviteStatus(invite);
+        if (status === 'expired') return err(410, 'invite.expired', 'La invitación venció.');
+        if (status === 'used') return err(410, 'invite.used', 'La invitación ya fue usada.');
+        if (status === 'revoked') return err(410, 'invite.revoked', 'La invitación fue revocada.');
+        const id = `u${Date.now()}`;
+        const user: User = {
+          id,
+          name,
+          email: invite.email,
+          orgRole: invite.role,
+          status: 'active',
+        };
+        store.users[id] = user;
+        for (const projectId of invite.projects) {
+          store.memberships.push({ userId: id, projectId, role: 'designer' });
+        }
+        invite.used = true;
+        return ok({ id, name, email: user.email, orgRole: user.orgRole, status: user.status });
+      },
+      async requestRecovery(email: string) {
+        void email;
+        return ok(undefined);
+      },
+      async recoveryInfo(token: string) {
+        const rec = store.recoveries.find((r) => r.token === token);
+        if (!rec) return err(404, 'recovery.not_found', 'Enlace no válido.');
+        let status: RecoveryStatus = 'valid';
+        if (rec.used) status = 'used';
+        else if (new Date(rec.expiresAt).getTime() < Date.now()) status = 'expired';
+        return ok({ status });
+      },
+      async resetPassword(token: string, password: string) {
+        void password;
+        const rec = store.recoveries.find((r) => r.token === token);
+        if (!rec) return err(404, 'recovery.not_found', 'Enlace no válido.');
+        if (rec.used) return err(410, 'recovery.used', 'Este enlace ya fue usado.');
+        if (new Date(rec.expiresAt).getTime() < Date.now()) {
+          return err(410, 'recovery.expired', 'El enlace venció.');
+        }
+        rec.used = true;
+        return ok(undefined);
+      },
     },
 
     directory: {
@@ -206,10 +288,10 @@ export function mockGateway(locals: App.Locals): Gateways {
         return ok(PROJECTS);
       },
       async listMembers(projectId: string) {
-        return ok(Object.entries(MEMBERS).map(([userId, role]) => ({ userId, projectId, role })));
+        return ok(MEMBERSHIPS.filter((m) => m.projectId === projectId));
       },
       async listUsers() {
-        return ok(Object.values(USERS));
+        return ok(Object.values(store.users));
       },
       async listTokens(projectId: string) {
         return ok(SEED_TOKENS.filter((t) => t.project === projectId));

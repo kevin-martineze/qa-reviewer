@@ -7,7 +7,9 @@ import type {
   ElementRef,
   Notification,
   Organization,
+  OrgRole,
   Project,
+  ProjectMember,
   ProjectRole,
   Review,
   Round,
@@ -108,17 +110,124 @@ export const PROJECTS: Project[] = [
   },
 ];
 
-// Rol de proyecto por usuario (simplificado: un rol por usuario en Lideris).
-export const MEMBERS: Record<string, ProjectRole> = {
-  u1: 'developer',
-  u2: 'design_lead',
-  u3: 'designer',
-  u4: 'designer',
-  u5: 'developer',
-  u6: 'viewer',
-  u7: 'project_admin',
-  u8: 'designer',
-};
+// Membresías por proyecto. `MEMBERS` (abajo) conserva el rol primario en Lideris,
+// que es el que define los permisos en el mock de fase 2.
+export const MEMBERSHIPS: ProjectMember[] = [
+  { userId: 'u1', projectId: 'lideris', role: 'developer' },
+  { userId: 'u2', projectId: 'lideris', role: 'design_lead' },
+  { userId: 'u3', projectId: 'lideris', role: 'designer' },
+  { userId: 'u4', projectId: 'lideris', role: 'designer' },
+  { userId: 'u5', projectId: 'lideris', role: 'developer' },
+  { userId: 'u6', projectId: 'lideris', role: 'viewer' },
+  { userId: 'u7', projectId: 'lideris', role: 'project_admin' },
+  { userId: 'u8', projectId: 'lideris', role: 'designer' },
+  { userId: 'u1', projectId: 'auralis', role: 'project_admin' },
+  { userId: 'u2', projectId: 'auralis', role: 'designer' },
+  { userId: 'u3', projectId: 'auralis', role: 'developer' },
+  { userId: 'u5', projectId: 'auralis', role: 'viewer' },
+];
+
+export const MEMBERS: Record<string, ProjectRole> = MEMBERSHIPS.filter(
+  (m) => m.projectId === 'lideris',
+).reduce<Record<string, ProjectRole>>((acc, m) => {
+  acc[m.userId] = m.role;
+  return acc;
+}, {});
+
+/* ── Invitaciones y recuperaciones de contraseña (mock) ─────────────── */
+
+export interface InviteSeed {
+  token: string;
+  email: string;
+  inviter: string; // userId
+  role: OrgRole;
+  projects: string[]; // project ids
+  expiresAt: string; // ISO
+  used: boolean;
+  revoked: boolean;
+}
+
+export interface RecoverySeed {
+  token: string;
+  userId: string;
+  expiresAt: string; // ISO
+  used: boolean;
+}
+
+const DAY = 24 * 60 * 60 * 1000;
+const HOUR = 60 * 60 * 1000;
+
+// Tokens mock para probar cada estado:
+//   Invitación:  /invite/invite-valid-0001    → válida · mariana@ejemplo.co · miembro · Lideris
+//                /invite/invite-expired-0001  → vencida (7 días)
+//                /invite/invite-used-0001     → usada
+//                /invite/invite-revoked-0001  → revocada
+//   Recuperación:/recover/recover-valid-0001  → válido
+//                /recover/recover-expired-0001 → vencido (1 h)
+//                /recover/recover-used-0001   → usado
+export const SEED_INVITES: InviteSeed[] = [
+  {
+    token: 'invite-valid-0001',
+    email: 'mariana@ejemplo.co',
+    inviter: 'u1',
+    role: 'member',
+    projects: ['lideris'],
+    expiresAt: new Date(Date.now() + 7 * DAY).toISOString(),
+    used: false,
+    revoked: false,
+  },
+  {
+    token: 'invite-expired-0001',
+    email: 'luis@ejemplo.co',
+    inviter: 'u1',
+    role: 'member',
+    projects: ['lideris'],
+    expiresAt: new Date(Date.now() - DAY).toISOString(),
+    used: false,
+    revoked: false,
+  },
+  {
+    token: 'invite-used-0001',
+    email: 'caro@ejemplo.co',
+    inviter: 'u2',
+    role: 'member',
+    projects: ['auralis'],
+    expiresAt: new Date(Date.now() + 7 * DAY).toISOString(),
+    used: true,
+    revoked: false,
+  },
+  {
+    token: 'invite-revoked-0001',
+    email: 'pablo@ejemplo.co',
+    inviter: 'u1',
+    role: 'admin',
+    projects: ['lideris', 'auralis'],
+    expiresAt: new Date(Date.now() + 7 * DAY).toISOString(),
+    used: false,
+    revoked: true,
+  },
+];
+
+export const SEED_RECOVERIES: RecoverySeed[] = [
+  {
+    token: 'recover-valid-0001',
+    userId: 'u1',
+    expiresAt: new Date(Date.now() + HOUR).toISOString(),
+    used: false,
+  },
+  {
+    token: 'recover-expired-0001',
+    userId: 'u2',
+    expiresAt: new Date(Date.now() - HOUR).toISOString(),
+    used: false,
+  },
+  {
+    token: 'recover-used-0001',
+    userId: 'u3',
+    expiresAt: new Date(Date.now() + HOUR).toISOString(),
+    used: true,
+  },
+];
 
 export const SEED_TOKENS: ApiToken[] = [
   {

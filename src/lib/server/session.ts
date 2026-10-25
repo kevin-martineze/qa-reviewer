@@ -1,11 +1,11 @@
 import type { Cookies } from '@sveltejs/kit';
 import type { SessionUser } from '$lib/api/types';
-import { USERS } from './adapters/mock/seeds';
+import { store } from './adapters/mock/store';
 
 export const SESSION_COOKIE = 'qa_session';
 
 function userById(id: string): SessionUser | null {
-  const user = USERS[id];
+  const user = store.users[id];
   if (!user) return null;
   return {
     id: user.id,

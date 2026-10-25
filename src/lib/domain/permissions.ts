@@ -102,3 +102,14 @@ export function permissionsOf(orgRole: OrgRole, projectRole?: ProjectRole): Set<
 export function can(permissions: ReadonlySet<string>, permission: Permission): boolean {
   return permissions.has(permission);
 }
+
+export function permissionLabel(key: string): string {
+  return PERMISSIONS.find((d) => d.key === key)?.label ?? key;
+}
+
+export function permissionGrantedBy(key: string): string {
+  const def = PERMISSIONS.find((d) => d.key === key);
+  const orgOnly = (def?.roles ?? []).every((r) => r === 'owner' || r === 'admin');
+  if (orgOnly) return 'un admin de la organización';
+  return 'un admin de la organización o el project_admin del proyecto';
+}
