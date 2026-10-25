@@ -4,11 +4,11 @@ Cómo se arma la estructura visual del frontend. La meta es que **la carpeta de 
 
 ## Tres piezas, tres responsabilidades
 
-| Pieza | Dónde | Responsabilidad | No hace |
-|---|---|---|---|
-| **Layout de ruta** | `routes/**/+layout.svelte` + `+layout.server.ts` | Guard, datos compartidos por el segmento, elegir el template y llenarlo con organisms | Markup propio (más allá de llamar al template), condiciones sobre la URL |
-| **Template** | `$lib/components/templates/*` | Estructura visual: regiones (snippets), espaciado, scroll, sticky, ancho | Cargar datos, leer `page`, stores, tipos de dominio, organisms de negocio |
-| **Página** | `routes/**/+page.svelte` + `+page.server.ts` | Datos de su vista, actions, `meta` (título, migas) y composición del contenido | Tocar el chrome del padre, abrir su propio contenedor de scroll |
+| Pieza              | Dónde                                            | Responsabilidad                                                                       | No hace                                                                   |
+| ------------------ | ------------------------------------------------ | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| **Layout de ruta** | `routes/**/+layout.svelte` + `+layout.server.ts` | Guard, datos compartidos por el segmento, elegir el template y llenarlo con organisms | Markup propio (más allá de llamar al template), condiciones sobre la URL  |
+| **Template**       | `$lib/components/templates/*`                    | Estructura visual: regiones (snippets), espaciado, scroll, sticky, ancho              | Cargar datos, leer `page`, stores, tipos de dominio, organisms de negocio |
+| **Página**         | `routes/**/+page.svelte` + `+page.server.ts`     | Datos de su vista, actions, `meta` (título, migas) y composición del contenido        | Tocar el chrome del padre, abrir su propio contenedor de scroll           |
 
 Regla corta: **el layout decide, el template dibuja, la página llena.**
 
@@ -69,15 +69,15 @@ Por qué así:
 
 ## Catálogo de templates
 
-| Template | Regiones (snippets) | Props | Lo usa |
-|---|---|---|---|
-| `AppShell` | `children` | `nav`, `user`, `crumbs`, `unread` | `(app)/+layout` |
-| `AuthTemplate` | `children`, `footer?` | `title`, `description?` | `(public)/+layout` |
-| `ListTemplate` | `actions?`, `filters?`, `children`, `pagination?` | `title`, `description?` | bandeja, revisiones, notificaciones, usuarios |
-| `DetailTemplate` | `header`, `banner?`, `children`, `footer?`, `pending?` | `tabs`, `currentTab`, `loading` | `reviews/[id]/(detail)` |
-| `ViewerTemplate` | `toolbar`, `children` (lienzo), `aside`, `footer?` | `asideWidth?` | `screens/[key]` |
-| `SettingsTemplate` | `children`, `actions?` | `title`, `nav`, `currentNav` | `admin`, `settings`, `projects/[slug]/settings` |
-| `DashboardTemplate` | `filters?`, `kpis?`, `children` | `title`, `description?` | `metrics` |
+| Template            | Regiones (snippets)                                    | Props                             | Lo usa                                          |
+| ------------------- | ------------------------------------------------------ | --------------------------------- | ----------------------------------------------- |
+| `AppShell`          | `children`                                             | `nav`, `user`, `crumbs`, `unread` | `(app)/+layout`                                 |
+| `AuthTemplate`      | `children`, `footer?`                                  | `title`, `description?`           | `(public)/+layout`                              |
+| `ListTemplate`      | `actions?`, `filters?`, `children`, `pagination?`      | `title`, `description?`           | bandeja, revisiones, notificaciones, usuarios   |
+| `DetailTemplate`    | `header`, `banner?`, `children`, `footer?`, `pending?` | `tabs`, `currentTab`, `loading`   | `reviews/[id]/(detail)`                         |
+| `ViewerTemplate`    | `toolbar`, `children` (lienzo), `aside`, `footer?`     | `asideWidth?`                     | `screens/[key]`                                 |
+| `SettingsTemplate`  | `children`, `actions?`                                 | `title`, `nav`, `currentNav`      | `admin`, `settings`, `projects/[slug]/settings` |
+| `DashboardTemplate` | `filters?`, `kpis?`, `children`                        | `title`, `description?`           | `metrics`                                       |
 
 Un template nuevo se agrega solo si ninguno de estos sirve. Va con su caso en este archivo.
 
@@ -124,8 +124,16 @@ El gate de ESLint bloquea `page.url.pathname` dentro de `+layout.svelte`.
     children: Snippet;
   }
 
-  let { header, tabs, currentTab, banner, footer, pending, loading = false, children }: Props =
-    $props();
+  let {
+    header,
+    tabs,
+    currentTab,
+    banner,
+    footer,
+    pending,
+    loading = false,
+    children,
+  }: Props = $props();
 </script>
 
 <div class="flex h-full min-h-0 flex-col">
@@ -175,7 +183,11 @@ El gate de ESLint bloquea `page.url.pathname` dentro de `+layout.svelte`.
     { key: 'screens', label: 'Pantallas', href: resolve('/(app)/reviews/[id]', { id }) },
     { key: 'summary', label: 'Resumen', href: resolve('/(app)/reviews/[id]/summary', { id }) },
     { key: 'rounds', label: 'Rondas', href: resolve('/(app)/reviews/[id]/rounds', { id }) },
-    { key: 'feedback', label: 'Para Claude Code', href: resolve('/(app)/reviews/[id]/feedback', { id }) },
+    {
+      key: 'feedback',
+      label: 'Para Claude Code',
+      href: resolve('/(app)/reviews/[id]/feedback', { id }),
+    },
     { key: 'activity', label: 'Actividad', href: resolve('/(app)/reviews/[id]/activity', { id }) },
     { key: 'branch', label: 'Rama y PR', href: resolve('/(app)/reviews/[id]/branch', { id }) },
   ]);
@@ -244,11 +256,11 @@ Al ir de `/reviews/QR-0012` a `/reviews/QR-0013`, SvelteKit **reusa** los compon
 
 ### 10. Errores en el nivel donde se pueden mostrar
 
-| Archivo | Cubre | El usuario conserva |
-|---|---|---|
-| `+error.svelte` (raíz) | fallo del shell o sin sesión | nada (pantalla simple con link al inicio) |
-| `(app)/+error.svelte` | revisión inexistente, 403 de un segmento | sidebar y topbar |
-| `reviews/[id]/(detail)/+error.svelte` | falla una tab | cabecera de la revisión y las tabs |
+| Archivo                               | Cubre                                    | El usuario conserva                       |
+| ------------------------------------- | ---------------------------------------- | ----------------------------------------- |
+| `+error.svelte` (raíz)                | fallo del shell o sin sesión             | nada (pantalla simple con link al inicio) |
+| `(app)/+error.svelte`                 | revisión inexistente, 403 de un segmento | sidebar y topbar                          |
+| `reviews/[id]/(detail)/+error.svelte` | falla una tab                            | cabecera de la revisión y las tabs        |
 
 Un `+error.svelte` se dibuja **dentro** de los layouts superiores al segmento que falló. Si falla el `load` de `[id]`, se usa el de `(app)`.
 
@@ -256,13 +268,13 @@ Un `+error.svelte` se dibuja **dentro** de los layouts superiores al segmento qu
 
 lideris-v2 creció rápido y tiene atajos que aquí se evitan desde el principio:
 
-| En lideris-v2 | Problema | En qa-reviewer |
-|---|---|---|
-| `(app)/+layout.svelte`: `isTurner` decide si se pinta el `AppShell` | El chrome depende de un `if` sobre la URL | Grupo propio con su layout (regla 1) |
-| `preorders/[id]/+layout.svelte`: `isQuoteWizardRoute` quita cabecera y tabs | Igual: condición sobre `pathname` | Grupo `(detail)` (regla 1) |
+| En lideris-v2                                                                                             | Problema                                      | En qa-reviewer                                  |
+| --------------------------------------------------------------------------------------------------------- | --------------------------------------------- | ----------------------------------------------- |
+| `(app)/+layout.svelte`: `isTurner` decide si se pinta el `AppShell`                                       | El chrome depende de un `if` sobre la URL     | Grupo propio con su layout (regla 1)            |
+| `preorders/[id]/+layout.svelte`: `isQuoteWizardRoute` quita cabecera y tabs                               | Igual: condición sobre `pathname`             | Grupo `(detail)` (regla 1)                      |
 | `(purchases)/+layout.svelte`: el store `moduleSidebar` registra el rail y `MAIN_VIEWS` lo oculta por ruta | Singleton de módulo más lista de rutas a mano | El layout pasa el snippet al template (regla 4) |
-| `DetailWithSidePanel.svelte` importa DTOs clínicos | El template queda atado a un dominio | Template puro (regla 2) |
-| Cabecera y tabs escritas dentro de `+layout.svelte` | El markup se duplica entre detalles | `DetailTemplate` reutilizable (regla 3) |
+| `DetailWithSidePanel.svelte` importa DTOs clínicos                                                        | El template queda atado a un dominio          | Template puro (regla 2)                         |
+| Cabecera y tabs escritas dentro de `+layout.svelte`                                                       | El markup se duplica entre detalles           | `DetailTemplate` reutilizable (regla 3)         |
 
 Lo que sí se copia: `PageLayout` y `ListTemplate` con regiones como snippets, el skeleton al cambiar de tab y los grupos `(app)`/`(auth)`.
 

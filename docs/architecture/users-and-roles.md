@@ -16,43 +16,43 @@ Organización (p. ej. Pangea)
 
 ### Organización
 
-| Rol | Para quién | Puede |
-|---|---|---|
-| `owner` | Dueño de la cuenta (uno o dos) | Todo, incluido transferir la propiedad y borrar la organización |
-| `admin` | Líder técnico, líder de diseño | Invitar y desactivar usuarios, crear proyectos, ver todos los proyectos y métricas |
-| `member` | Resto | Solo los proyectos donde es miembro |
+| Rol      | Para quién                     | Puede                                                                              |
+| -------- | ------------------------------ | ---------------------------------------------------------------------------------- |
+| `owner`  | Dueño de la cuenta (uno o dos) | Todo, incluido transferir la propiedad y borrar la organización                    |
+| `admin`  | Líder técnico, líder de diseño | Invitar y desactivar usuarios, crear proyectos, ver todos los proyectos y métricas |
+| `member` | Resto                          | Solo los proyectos donde es miembro                                                |
 
 ### Proyecto
 
-| Rol | Para quién | Resumen |
-|---|---|---|
-| `project_admin` | Líder del proyecto | Configura el proyecto (integraciones, SLA, límites, reglas de asignación, enmascarado) y gestiona miembros |
-| `design_lead` | Líder de UI/UX | Asigna revisiones, reasigna, da veredicto, puede **anular** un envío y reabrir la revisión |
-| `designer` | Diseñador UI/UX | Da veredicto y comenta en lo asignado (y en lo que abra del proyecto) |
-| `developer` | Dev frontend | Crea revisiones con la skill, sube rondas, comenta y responde, resuelve comentarios |
-| `viewer` | PM, QA, stakeholders | Solo lectura y comentarios |
+| Rol             | Para quién           | Resumen                                                                                                    |
+| --------------- | -------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `project_admin` | Líder del proyecto   | Configura el proyecto (integraciones, SLA, límites, reglas de asignación, enmascarado) y gestiona miembros |
+| `design_lead`   | Líder de UI/UX       | Asigna revisiones, reasigna, da veredicto, puede **anular** un envío y reabrir la revisión                 |
+| `designer`      | Diseñador UI/UX      | Da veredicto y comenta en lo asignado (y en lo que abra del proyecto)                                      |
+| `developer`     | Dev frontend         | Crea revisiones con la skill, sube rondas, comenta y responde, resuelve comentarios                        |
+| `viewer`        | PM, QA, stakeholders | Solo lectura y comentarios                                                                                 |
 
 ## Matriz de permisos
 
 Los permisos son claves fijas en código. Los roles son conjuntos de permisos predefinidos (no editables en v1; ver [ADR 0007](../adr/0007-roles-predefinidos.md)).
 
-| Permiso | owner | admin | project_admin | design_lead | designer | developer | viewer |
-|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-| `org:manage` (nombre, borrar, propiedad) | ✓ | | | | | | |
-| `users:invite` · `users:deactivate` | ✓ | ✓ | | | | | |
-| `projects:create` | ✓ | ✓ | | | | | |
-| `projects:configure` | ✓ | ✓ | ✓ | | | | |
-| `members:manage` | ✓ | ✓ | ✓ | | | | |
-| `reviews:read` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| `reviews:create` (skill) · `rounds:create` | | | ✓ | | | ✓ | |
-| `reviews:assign` | ✓ | ✓ | ✓ | ✓ | | | |
-| `verdicts:set` · `reviews:submit` | | | | ✓ | ✓ | | |
-| `reviews:reopen` (anular envío) | | | ✓ | ✓ | | | |
-| `comments:create` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| `comments:resolve` | | | ✓ | ✓ | ✓ | ✓ | |
-| `comments:moderate` (editar o borrar de otros) | ✓ | ✓ | ✓ | ✓ | | | |
-| `tokens:own` (tokens personales de la skill) | | | ✓ | | | ✓ | |
-| `reports:view` | ✓ | ✓ | ✓ | ✓ | | | |
+| Permiso                                        | owner | admin | project_admin | design_lead | designer | developer | viewer |
+| ---------------------------------------------- | :---: | :---: | :-----------: | :---------: | :------: | :-------: | :----: |
+| `org:manage` (nombre, borrar, propiedad)       |   ✓   |       |               |             |          |           |        |
+| `users:invite` · `users:deactivate`            |   ✓   |   ✓   |               |             |          |           |        |
+| `projects:create`                              |   ✓   |   ✓   |               |             |          |           |        |
+| `projects:configure`                           |   ✓   |   ✓   |       ✓       |             |          |           |        |
+| `members:manage`                               |   ✓   |   ✓   |       ✓       |             |          |           |        |
+| `reviews:read`                                 |   ✓   |   ✓   |       ✓       |      ✓      |    ✓     |     ✓     |   ✓    |
+| `reviews:create` (skill) · `rounds:create`     |       |       |       ✓       |             |          |     ✓     |        |
+| `reviews:assign`                               |   ✓   |   ✓   |       ✓       |      ✓      |          |           |        |
+| `verdicts:set` · `reviews:submit`              |       |       |               |      ✓      |    ✓     |           |        |
+| `reviews:reopen` (anular envío)                |       |       |       ✓       |      ✓      |          |           |        |
+| `comments:create`                              |   ✓   |   ✓   |       ✓       |      ✓      |    ✓     |     ✓     |   ✓    |
+| `comments:resolve`                             |       |       |       ✓       |      ✓      |    ✓     |     ✓     |        |
+| `comments:moderate` (editar o borrar de otros) |   ✓   |   ✓   |       ✓       |      ✓      |          |           |        |
+| `tokens:own` (tokens personales de la skill)   |       |       |       ✓       |             |          |     ✓     |        |
+| `reports:view`                                 |   ✓   |   ✓   |       ✓       |      ✓      |          |           |        |
 
 Reglas adicionales (en el servicio, no en la matriz):
 
@@ -89,15 +89,15 @@ invitado ──acepta (define contraseña)──▶ activo ──desactivar─�
 
 ### Notificaciones
 
-| Evento | A quién | Canal |
-|---|---|---|
-| Revisión asignada | asignados | in-app + correo |
-| Nueva ronda | asignados | in-app + correo |
-| Revisión enviada (aprobada o con ajustes) | autor | in-app + correo + PR + tarjeta |
-| Mención `@usuario` en un comentario | mencionado | in-app + correo |
-| Respuesta a mi comentario | autor del comentario | in-app |
-| Por vencer (24 h) · vencida | asignados, `design_lead` | in-app + correo |
-| Invitación · recuperación de contraseña | invitado o usuario | correo |
+| Evento                                    | A quién                  | Canal                          |
+| ----------------------------------------- | ------------------------ | ------------------------------ |
+| Revisión asignada                         | asignados                | in-app + correo                |
+| Nueva ronda                               | asignados                | in-app + correo                |
+| Revisión enviada (aprobada o con ajustes) | autor                    | in-app + correo + PR + tarjeta |
+| Mención `@usuario` en un comentario       | mencionado               | in-app + correo                |
+| Respuesta a mi comentario                 | autor del comentario     | in-app                         |
+| Por vencer (24 h) · vencida               | asignados, `design_lead` | in-app + correo                |
+| Invitación · recuperación de contraseña   | invitado o usuario       | correo                         |
 
 Cada usuario elige en sus preferencias qué recibe por correo; in-app siempre.
 

@@ -71,15 +71,15 @@ skill                          API                           S3
 
 ## Documentos
 
-| Documento | Contenido |
-|---|---|
-| [domain.md](domain.md) | Modelo, estados, reglas y manifiesto v1 |
-| [api.md](api.md) | Endpoints, autenticación, errores y versionado |
-| [frontend.md](frontend.md) | Capas, patrones y estructura de SvelteKit |
-| [layouts.md](layouts.md) | Layouts de ruta, templates, guards y errores por segmento |
-| [backend.md](backend.md) | Módulos, capas y patrones de NestJS |
-| [security.md](security.md) | Datos sensibles, tokens, almacenamiento |
-| [../adr/](../adr/) | Decisiones con sus alternativas |
+| Documento                  | Contenido                                                 |
+| -------------------------- | --------------------------------------------------------- |
+| [domain.md](domain.md)     | Modelo, estados, reglas y manifiesto v1                   |
+| [api.md](api.md)           | Endpoints, autenticación, errores y versionado            |
+| [frontend.md](frontend.md) | Capas, patrones y estructura de SvelteKit                 |
+| [layouts.md](layouts.md)   | Layouts de ruta, templates, guards y errores por segmento |
+| [backend.md](backend.md)   | Módulos, capas y patrones de NestJS                       |
+| [security.md](security.md) | Datos sensibles, tokens, almacenamiento                   |
+| [../adr/](../adr/)         | Decisiones con sus alternativas                           |
 
 ## Fuera de alcance del MVP
 

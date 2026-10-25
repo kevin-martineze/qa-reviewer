@@ -37,36 +37,36 @@ Reglas de dependencia:
 
 ## Patrones
 
-| Patrón | Dónde | Para qué |
-|---|---|---|
-| **Puertos y adaptadores** | `$lib/api/ports.ts` + `$lib/server/adapters/{http,mock}` | Desarrollar y probar la UI sin API, y cambiar a `http` sin tocar rutas |
-| **Result\<T\>** | `apiClient` y los adaptadores | Ningún adaptador lanza; cada caller hace `if (!result.ok)` (igual que lideris-v2) |
-| **Funciones puras de dominio** | `$lib/domain/*` | `reviewProgress`, `canSubmit`, `verdictSummary`, `nextPendingScreen`, `anchorToPixels` |
-| **Strategy (modo de comparación)** | `organisms/compare/` con `side-by-side`, `slider`, `toggle` registrados por clave | Agregar un modo (p. ej. diferencia) sin tocar el visor |
-| **Templates con regiones como snippets** | `$lib/components/templates/*` | Un layout llena las regiones de un template; ver [layouts.md](layouts.md) |
-| **Form actions + enhance** | veredicto, comentario, envío | Funciona sin JS; con JS es optimista y sin recarga |
+| Patrón                                   | Dónde                                                                             | Para qué                                                                               |
+| ---------------------------------------- | --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| **Puertos y adaptadores**                | `$lib/api/ports.ts` + `$lib/server/adapters/{http,mock}`                          | Desarrollar y probar la UI sin API, y cambiar a `http` sin tocar rutas                 |
+| **Result\<T\>**                          | `apiClient` y los adaptadores                                                     | Ningún adaptador lanza; cada caller hace `if (!result.ok)` (igual que lideris-v2)      |
+| **Funciones puras de dominio**           | `$lib/domain/*`                                                                   | `reviewProgress`, `canSubmit`, `verdictSummary`, `nextPendingScreen`, `anchorToPixels` |
+| **Strategy (modo de comparación)**       | `organisms/compare/` con `side-by-side`, `slider`, `toggle` registrados por clave | Agregar un modo (p. ej. diferencia) sin tocar el visor                                 |
+| **Templates con regiones como snippets** | `$lib/components/templates/*`                                                     | Un layout llena las regiones de un template; ver [layouts.md](layouts.md)              |
+| **Form actions + enhance**               | veredicto, comentario, envío                                                      | Funciona sin JS; con JS es optimista y sin recarga                                     |
 
 ## Rutas
 
-| Ruta | Contenido |
-|---|---|
-| `/login` | Login (form action → `AuthGateway.login` → cookie `httpOnly`) |
-| `/invite/[token]` | Aceptar invitación y definir contraseña |
-| `/recover/[[token]]` | Pedir enlace y definir contraseña nueva |
-| `/` | Bandeja: revisiones asignadas a mí y pendientes (reviewer) o mis revisiones (autor) |
-| `/notifications` | Notificaciones (no leídas) |
-| `/reviews` | Listado con filtros en la URL: estado, proyecto, autor, búsqueda |
-| `/reviews/[id]` | Pantallas (tab por defecto): grilla de pantallas con veredicto, progreso y «Enviar revisión»; filtro «solo lo que cambió» (`?changed=`) |
-| `/reviews/[id]/summary` | Resumen del flujo |
-| `/reviews/[id]/rounds` | Historial de rondas |
-| `/reviews/[id]/feedback` | Feedback para Claude Code |
-| `/reviews/[id]/activity` | Actividad |
-| `/reviews/[id]/branch` | Rama y PR |
-| `/reviews/[id]/screens/[key]` | Visor: antes/después (`?compare=`, `?mode=`), ronda (`?round=`), veredicto y hilo con anclas |
-| `/metrics` | Métricas del equipo |
-| `/projects/[slug]/settings/*` | Configuración del proyecto (miembros, asignación, SLA, integraciones, reglas) |
-| `/admin/*` | Organización: usuarios, roles, auditoría |
-| `/settings/*` | Cuenta propia: perfil, notificaciones, tokens |
+| Ruta                          | Contenido                                                                                                                               |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `/login`                      | Login (form action → `AuthGateway.login` → cookie `httpOnly`)                                                                           |
+| `/invite/[token]`             | Aceptar invitación y definir contraseña                                                                                                 |
+| `/recover/[[token]]`          | Pedir enlace y definir contraseña nueva                                                                                                 |
+| `/`                           | Bandeja: revisiones asignadas a mí y pendientes (reviewer) o mis revisiones (autor)                                                     |
+| `/notifications`              | Notificaciones (no leídas)                                                                                                              |
+| `/reviews`                    | Listado con filtros en la URL: estado, proyecto, autor, búsqueda                                                                        |
+| `/reviews/[id]`               | Pantallas (tab por defecto): grilla de pantallas con veredicto, progreso y «Enviar revisión»; filtro «solo lo que cambió» (`?changed=`) |
+| `/reviews/[id]/summary`       | Resumen del flujo                                                                                                                       |
+| `/reviews/[id]/rounds`        | Historial de rondas                                                                                                                     |
+| `/reviews/[id]/feedback`      | Feedback para Claude Code                                                                                                               |
+| `/reviews/[id]/activity`      | Actividad                                                                                                                               |
+| `/reviews/[id]/branch`        | Rama y PR                                                                                                                               |
+| `/reviews/[id]/screens/[key]` | Visor: antes/después (`?compare=`, `?mode=`), ronda (`?round=`), veredicto y hilo con anclas                                            |
+| `/metrics`                    | Métricas del equipo                                                                                                                     |
+| `/projects/[slug]/settings/*` | Configuración del proyecto (miembros, asignación, SLA, integraciones, reglas)                                                           |
+| `/admin/*`                    | Organización: usuarios, roles, auditoría                                                                                                |
+| `/settings/*`                 | Cuenta propia: perfil, notificaciones, tokens                                                                                           |
 
 ## Estructura
 
@@ -139,10 +139,10 @@ src/
 
 ## Pruebas
 
-| Nivel | Herramienta | Qué cubre |
-|---|---|---|
-| Unidad | Vitest | `$lib/domain/*`, schemas, adaptador `mock` |
-| Servidor | Vitest | `load` y actions con un gateway falso (permisos, 403/409) |
-| E2E | Playwright con `REVIEWS_SOURCE=mock` | Flujo completo: abrir, comparar, comentar con ancla, aprobar o pedir ajuste, enviar |
+| Nivel    | Herramienta                          | Qué cubre                                                                           |
+| -------- | ------------------------------------ | ----------------------------------------------------------------------------------- |
+| Unidad   | Vitest                               | `$lib/domain/*`, schemas, adaptador `mock`                                          |
+| Servidor | Vitest                               | `load` y actions con un gateway falso (permisos, 403/409)                           |
+| E2E      | Playwright con `REVIEWS_SOURCE=mock` | Flujo completo: abrir, comparar, comentar con ancla, aprobar o pedir ajuste, enviar |
 
 Gates (igual que lideris-v2): `pnpm check`, `pnpm lint`, `pnpm format:check`, `pnpm test`, `pnpm build`.

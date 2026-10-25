@@ -6,11 +6,11 @@ El dev ejecuta la skill `/design-review` en su sesión de Claude Code. La skill 
 
 ## Piezas
 
-| Pieza | Repo | Stack |
-|---|---|---|
-| Plataforma web (este repo) | `qa-reviewer` | SvelteKit 2 + Svelte 5 (runes) + TypeScript + Tailwind v4 + shadcn-svelte |
-| API | `qa-reviewer-api` (por crear) | NestJS 11 + Fastify + MongoDB (Mongoose) + S3 |
-| Skill de captura | dentro de `qa-reviewer-api/skill` o repo propio (por decidir) | Skill de Claude Code + Playwright |
+| Pieza                      | Repo                                                                    | Stack                                                                     |
+| -------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Plataforma web (este repo) | `qa-reviewer`                                                           | SvelteKit 2 + Svelte 5 (runes) + TypeScript + Tailwind v4 + shadcn-svelte |
+| API                        | [`qa-reviewer-api`](https://github.com/kevin-martineze/qa-reviewer-api) | NestJS 11 + Fastify + MongoDB (Mongoose) + S3                             |
+| Skill de captura           | dentro de `qa-reviewer-api/skill` o repo propio (por decidir)           | Skill de Claude Code + Playwright                                         |
 
 ## Documentación
 
