@@ -12,7 +12,7 @@
     Users,
   } from '@lucide/svelte';
   import { tick } from 'svelte';
-  import { resetMode, setMode, userPrefersMode } from 'mode-watcher';
+  import { setMode, userPrefersMode } from 'mode-watcher';
 
   import { enhance } from '$app/forms';
   import { resolve } from '$app/paths';
@@ -37,6 +37,7 @@
   interface MockUser {
     id: string;
     name: string;
+    avatar: string | null;
   }
 
   interface Props {
@@ -66,9 +67,9 @@
     { mode: 'system', label: 'Sistema', icon: Monitor },
   ] as const;
 
+  // `resetMode()` volvería al default (claro); «Sistema» se guarda explícito.
   function applyTheme(mode: 'light' | 'dark' | 'system') {
-    if (mode === 'system') resetMode();
-    else setMode(mode);
+    setMode(mode);
   }
 </script>
 
@@ -96,7 +97,7 @@
     class="flex items-center gap-2 rounded-md py-1 pr-2 pl-1 text-sm transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
     aria-label="Menú de usuario"
   >
-    <UserAvatar name={user.name} />
+    <UserAvatar name={user.name} avatar={user.avatar} />
     <span class="hidden max-w-40 truncate font-medium md:inline">{user.name}</span>
   </DropdownMenuTrigger>
 
@@ -153,7 +154,7 @@
         <DropdownMenuSubContent class="w-56">
           {#each mockUsers as u (u.id)}
             <DropdownMenuItem onSelect={() => switchUser(u.id)} disabled={u.id === user.id}>
-              <UserAvatar name={u.name} size="xs" />
+              <UserAvatar name={u.name} avatar={u.avatar} size="xs" />
               <span class="flex-1 truncate">{u.name}</span>
               {#if u.id === user.id}<Check />{/if}
             </DropdownMenuItem>

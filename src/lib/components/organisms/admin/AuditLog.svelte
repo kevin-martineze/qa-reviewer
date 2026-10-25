@@ -2,7 +2,7 @@
   import type { AuditEvent } from '$lib/api/types';
   import UserAvatar from '$lib/components/molecules/UserAvatar.svelte';
   import { AUDIT_TYPE } from '$lib/domain/labels';
-  import { nameOf, type People } from '$lib/domain/people';
+  import { type People, nameOf, personOf } from '$lib/domain/people';
   import { formatTime } from '$lib/utils/dates';
   import { groupByDay } from '$lib/utils/group-by-day';
 
@@ -24,7 +24,7 @@
       <ol class="divide-y rounded-lg border">
         {#each group.items as event (event.id)}
           <li class="flex items-start gap-3 px-4 py-2.5">
-            <UserAvatar name={nameOf(people, event.actor)} size="xs" class="mt-0.5" />
+            <UserAvatar {...personOf(people, event.actor)} size="xs" class="mt-0.5" />
             <div class="min-w-0 flex-1">
               <p class="text-sm">
                 <strong class="font-medium">{nameOf(people, event.actor)}</strong>

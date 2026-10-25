@@ -118,6 +118,8 @@ El árbol de rutas está en [layouts.md](layouts.md#árbol-de-rutas).
 - **Fechas**: zona fija America/Bogotá y texto armado a mano («20 oct», «4:58 p. m.»), para que server y navegador pinten lo mismo. `now` llega del layout.
 - **Gráficos**: paleta validada con la skill dataviz (categórica `viz-1`/`viz-2`, crítico `viz-critical`, en claro y oscuro), sin doble eje, tooltip en hover y foco, y tabla equivalente.
 - **Ilustraciones**: `static/illustrations/*.webp` (fondo transparente, 560 px de ancho como máximo) vía `<Illustration name>` o `EmptyState illustration=`. Solo en estados de página completa y en `ErrorState` (403, 404, 410 y 5xx); las tarjetas chicas siguen con ícono. Son decorativas (`alt=""`): el título dice lo que pasa. Generadas con Gemini con un estilo común (vector plano, slate + `brand` #2a78d6 + acento #eb6834); al agregar una, registra sus dimensiones en `molecules/illustrations.ts`.
+- **Avatares**: banco fijo de 12 ilustraciones en `static/avatars/<id>.webp` (`$lib/domain/avatars.ts`). El API guarda solo el id (`User.avatar`, `SessionUser.avatar`); el front arma la URL. Un id desconocido o `null` muestra las iniciales. Se elige con `AvatarPicker` al aceptar la invitación y en Ajustes → Perfil. Subir foto propia queda fuera por ahora.
+- **Tema**: claro por defecto (`ModeWatcher defaultMode="light"`); «Sistema» del menú se guarda explícito con `setMode('system')`.
 - **Marca**: `BrandMark` (isotipo SVG con tokens `foreground`/`brand`, igual que `static/favicon.svg`), `BrandHero` en el panel lateral de las pantallas públicas (≥ `lg`) y `static/brand/og.jpg` (1200×630) como vista previa de los enlaces.
 - **Accesibilidad**: el veredicto nunca se comunica solo con color (texto + ícono); cada gráfico tiene su tabla.
 
@@ -125,6 +127,14 @@ El árbol de rutas está en [layouts.md](layouts.md#árbol-de-rutas).
 
 - Mientras no exista el API, `$lib/api/types.ts` refleja [api.md](api.md) a mano y el mock lo cumple.
 - Cuando el API publique `/docs-json`, los tipos se generan con `openapi-typescript` en `$lib/api/generated/` (script `pnpm gen:api`) y `types.ts` solo los reexporta. Prohibido duplicar tipos del contrato a mano después de eso.
+
+## Capturas del mock
+
+- Por defecto el mock pinta escenas SVG sintéticas (`adapters/mock/scenes.ts`), servidas por `/mock-assets/<escena>.svg`.
+- En tu máquina puedes usar capturas reales de Lideris: con Lideris corriendo, `node scripts/capture-lideris.mjs` (variables `LIDERIS_URL`, `PO_ID`, `PO_QUOTED_ID`, `SUPPLIER_ID`, `PURCHASE_ORDER_ID` opcionales). La primera vez abre Chrome para que inicies sesión a mano.
+- El script escribe `fixtures-private/lideris/` (raíz, gitignored): un PNG por escena, la sesión guardada y `manifest.json` con las cajas medidas de cada componente. El mock lo lee al arrancar: usa el PNG, ancla inspector, diff y comentarios a las cajas reales, y compara real con real (si falta la otra versión, no ofrece comparar). Reinicia el dev server tras capturar.
+- Nunca bajo `static/`: se copiaría al build y quedaría público. El repo es público; esas capturas pueden tener datos reales.
+- Los módulos con datos de pacientes (Autorizaciones, Citas) se quedan en SVG.
 
 ## Pruebas
 

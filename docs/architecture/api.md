@@ -73,9 +73,9 @@ La columna «Puerto» es el método de `$lib/api/ports.ts` que lo consume; el ad
 | `GET`   | `/auth/recovery/:token`      | —       | `auth.recoveryInfo`         | `{ status: valid\|expired\|used }`.                                                                         |
 | `POST`  | `/auth/recovery/:token`      | —       | `auth.resetPassword`        | `{ password }`. `410` si venció o se usó.                                                                   |
 | `GET`   | `/invitations/:token`        | —       | `auth.inviteInfo`           | `InviteInfo` con `status: valid\|expired\|used\|revoked`.                                                   |
-| `POST`  | `/invitations/:token/accept` | —       | `auth.acceptInvite`         | `{ name, password }` → `{ token, user }`.                                                                   |
+| `POST`  | `/invitations/:token/accept` | —       | `auth.acceptInvite`         | `{ name, password, avatar }` → `{ token, user }`. `avatar`: id del banco (`a01`…`a12`) o `null`.            |
 | `GET`   | `/me`                        | sesión  | `auth.me`                   | `SessionUser` con membresías. Los permisos se derivan en el front.                                          |
-| `PATCH` | `/me`                        | sesión  | `auth.updateProfile`        | `{ name }`.                                                                                                 |
+| `PATCH` | `/me`                        | sesión  | `auth.updateProfile`        | `{ name, avatar }`. `avatar`: id del banco o `null` (iniciales).                                            |
 | `PUT`   | `/me/password`               | sesión  | `auth.changePassword`       | `{ current, next }`. `400 auth.wrong_password` si la actual no coincide; cierra las demás sesiones.         |
 | `GET`   | `/me/notification-prefs`     | sesión  | `notifications.prefs`       | `NotificationPrefs`: qué llega también por correo.                                                          |
 | `PUT`   | `/me/notification-prefs`     | sesión  | `notifications.updatePrefs` | El objeto completo.                                                                                         |

@@ -23,10 +23,10 @@ export const load: PageServerLoad = async () => {
 export const actions: Actions = {
   profile: async ({ request, locals, fetch }) => {
     requireUser(locals);
-    const raw = formObject(await request.formData(), ['name']);
+    const raw = formObject(await request.formData(), ['name', 'avatar']);
     const parsed = profileSchema.safeParse(raw);
     if (!parsed.success) return fail(400, { profileErrors: fieldErrors(parsed.error) });
-    const result = await gateway(locals, fetch).auth.updateProfile(parsed.data.name);
+    const result = await gateway(locals, fetch).auth.updateProfile(parsed.data);
     return toastResult(result, 'Perfil actualizado.');
   },
 

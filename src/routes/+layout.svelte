@@ -37,5 +37,6 @@
 <TooltipProvider delayDuration={300}>
   {@render children()}
 </TooltipProvider>
-<ModeWatcher />
+<!-- Claro por defecto; quien elija oscuro o «sistema» en el menú lo conserva (localStorage). -->
+<ModeWatcher defaultMode="light" />
 <Toaster />

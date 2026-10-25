@@ -8,6 +8,7 @@ const user = (id: string, role: SessionUser['memberships'][number]['role']): Ses
   email: `${id}@x.co`,
   orgRole: 'member',
   status: 'active',
+  avatar: null,
   memberships: [{ projectId: 'p', role }],
 });
 

@@ -3,21 +3,27 @@
 
   import UserAvatar from './UserAvatar.svelte';
 
+  interface StackUser {
+    name: string;
+    avatar: string | null;
+  }
+
   interface Props {
-    names: string[];
+    users: StackUser[];
     max?: number;
     class?: string;
   }
 
-  let { names, max = 3, class: className }: Props = $props();
+  let { users, max = 3, class: className }: Props = $props();
 
-  const shown = $derived(names.slice(0, max));
-  const rest = $derived(names.length - shown.length);
+  const shown = $derived(users.slice(0, max));
+  const rest = $derived(users.length - shown.length);
+  const names = $derived(users.map((u) => u.name).join(', '));
 </script>
 
-<div class={cn('flex items-center -space-x-1.5', className)} title={names.join(', ')}>
-  {#each shown as name, i (`${i}-${name}`)}
-    <UserAvatar {name} size="xs" class="ring-2 ring-background" />
+<div class={cn('flex items-center -space-x-1.5', className)} title={names}>
+  {#each shown as user, i (`${i}-${user.name}`)}
+    <UserAvatar name={user.name} avatar={user.avatar} size="xs" class="ring-2 ring-background" />
   {/each}
   {#if rest > 0}
     <span
@@ -26,5 +32,5 @@
       +{rest}
     </span>
   {/if}
-  <span class="sr-only">{names.join(', ')}</span>
+  <span class="sr-only">{names}</span>
 </div>

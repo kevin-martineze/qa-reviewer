@@ -24,9 +24,7 @@
 
 <div class="flex h-dvh min-h-0">
   <!-- Panel de marca: siempre oscuro (la ilustración lo es); `dark` hace que los tokens resuelvan claros. -->
-  <aside
-    class="dark relative hidden w-5/12 max-w-2xl shrink-0 overflow-hidden bg-background text-foreground lg:block"
-  >
+  <aside class="dark hidden w-5/12 max-w-2xl shrink-0 bg-brand-surface text-foreground lg:block">
     <BrandHero />
   </aside>
 

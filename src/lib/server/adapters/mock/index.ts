@@ -12,6 +12,7 @@ import type {
   ReviewFilters,
 } from '$lib/api/ports';
 import type {
+  AcceptInviteInput,
   ActivityType,
   AuditType,
   Comment,
@@ -19,6 +20,7 @@ import type {
   LoginResult,
   NotificationType,
   Priority,
+  ProfileInput,
   Project,
   ReportFilters,
   ReportsOverview,
@@ -50,6 +52,7 @@ function sessionOf(user: User): SessionUser {
     email: user.email,
     orgRole: user.orgRole,
     status: user.status,
+    avatar: user.avatar,
     memberships: store.memberships
       .filter((m) => m.userId === user.id)
       .map((m) => ({ projectId: m.projectId, role: m.role })),
@@ -553,8 +556,7 @@ export function mockGateway(locals: App.Locals): Gateways {
         });
       },
 
-      async acceptInvite(token: string, name: string, password: string) {
-        void password;
+      async acceptInvite(token: string, input: AcceptInviteInput) {
         const invite = store.invites.find((i) => i.token === token);
         if (!invite) return err(404, 'invite.not_found', 'Esta invitación no existe.');
         const status = inviteStatus(invite);
@@ -563,10 +565,11 @@ export function mockGateway(locals: App.Locals): Gateways {
         }
         const created: User = {
           id: store.nextId('u'),
-          name: name.trim(),
+          name: input.name.trim(),
           email: invite.email,
           orgRole: invite.role,
           status: 'active',
+          avatar: input.avatar,
           lastSeenAt: nowIso(),
           createdAt: nowIso(),
         };
@@ -604,12 +607,13 @@ export function mockGateway(locals: App.Locals): Gateways {
         return ok(undefined);
       },
 
-      async updateProfile(name: string) {
+      async updateProfile(input: ProfileInput) {
         const me = session();
         if (!me.ok) return me;
         const user = store.users.find((u) => u.id === me.data.id);
         if (!user) return err(404, 'users.not_found', 'Usuario no encontrado.');
-        user.name = name.trim();
+        user.name = input.name.trim();
+        user.avatar = input.avatar;
         return ok(sessionOf(user));
       },
 

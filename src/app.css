@@ -85,6 +85,8 @@
 
   /* Marca: el azul del logo y las ilustraciones (static/illustrations). */
   --brand: #2a78d6;
+  /* Fondo plano de static/brand/login-hero.webp: el panel lo continúa sin costura. */
+  --brand-surface: #1f2a3e;
 }
 
 .dark {
@@ -146,10 +148,12 @@
   --viz-critical: #d03b3b;
 
   --brand: #3987e5;
+  --brand-surface: #1f2a3e;
 }
 
 @theme inline {
   --color-brand: var(--brand);
+  --color-brand-surface: var(--brand-surface);
   --color-viz-1: var(--viz-1);
   --color-viz-2: var(--viz-2);
   --color-viz-critical: var(--viz-critical);

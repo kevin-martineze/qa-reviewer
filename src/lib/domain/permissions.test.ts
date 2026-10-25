@@ -90,6 +90,7 @@ describe('permissionsFor y visibleProjectIds', () => {
     email: 'a@ejemplo.co',
     orgRole: 'member',
     status: 'active',
+    avatar: null,
     memberships: [
       { projectId: 'lideris', role: 'designer' },
       { projectId: 'auralis', role: 'developer' },

@@ -9,7 +9,7 @@
   import ToneBadge from '$lib/components/molecules/ToneBadge.svelte';
   import { dueState } from '$lib/domain/due';
   import { PRIORITY, REVIEW_STATUS } from '$lib/domain/labels';
-  import { nameOf, type People } from '$lib/domain/people';
+  import { type People, nameOf, personOf } from '$lib/domain/people';
   import { progressOf } from '$lib/domain/review-progress';
   import { cn } from '$lib/utils/cn';
   import { formatRelative } from '$lib/utils/dates';
@@ -67,5 +67,8 @@
     </span>
   </div>
 
-  <AvatarStack names={review.assignees.map((id) => nameOf(people, id))} class="w-14 justify-end" />
+  <AvatarStack
+    users={review.assignees.map((id) => personOf(people, id))}
+    class="w-14 justify-end"
+  />
 </a>

@@ -4,6 +4,8 @@
 // Los colores hex son de la «captura» simulada, no de la UI: no aplican los tokens.
 import type { Box, ElementRef, ScreenElement } from '$lib/api/types';
 
+import { measuredBox, privateCapture } from './private-captures';
+
 export interface SceneNode {
   x: number;
   y: number;
@@ -607,8 +609,22 @@ export function sceneById(id: string): Scene | undefined {
   return REGISTRY.get(id);
 }
 
+/** Captura real local (fixtures-private) si existe; si no, el SVG sintético. */
 export function assetUrl(id: string): string {
-  return `/mock-assets/${id}.svg`;
+  return privateCapture(id) ? `/mock-assets/${id}.png` : `/mock-assets/${id}.svg`;
+}
+
+export function isRealCapture(id: string): boolean {
+  return privateCapture(id) !== undefined;
+}
+
+/**
+ * URL de la captura para comparar (develop o ronda anterior) solo si es del mismo tipo
+ * que la principal: comparar una captura real con un SVG no dice nada.
+ */
+export function pairedUrl(img: string, other: string | null | undefined): string | null {
+  if (!other) return null;
+  return isRealCapture(img) === isRealCapture(other) ? assetUrl(other) : null;
 }
 
 function frac(n: SceneNode, s: Scene): Box {
@@ -628,14 +644,48 @@ export function diffOf(scene: Scene): Box[] {
   return scene.nodes.filter((n) => n.diff).map((n) => frac(n, scene));
 }
 
+/**
+ * En una captura real, cada bloque con componente toma la caja medida en la página
+ * (k-ésima coincidencia de su selector). Los que no aparecieron se descartan.
+ */
+function realNodes(id: string, scene: Scene): Array<{ node: SceneNode; el: ElementRef; box: Box }> {
+  const seen: Record<string, number> = {};
+  return scene.nodes.flatMap((node) => {
+    if (!node.el) return [];
+    const k = seen[node.el.selector] ?? 0;
+    seen[node.el.selector] = k + 1;
+    const box = measuredBox(id, node.el.selector, k);
+    return box ? [{ node, el: node.el, box }] : [];
+  });
+}
+
 export function sceneElements(id: string): ScreenElement[] {
   const scene = REGISTRY.get(id);
-  return scene ? elementsOf(scene) : [];
+  if (!scene) return [];
+  if (!isRealCapture(id)) return elementsOf(scene);
+  return realNodes(id, scene).map(({ el, box }, i) => ({ ...el, id: `${el.line}-real-${i}`, box }));
 }
 
 export function sceneDiff(id: string): Box[] {
   const scene = REGISTRY.get(id);
-  return scene ? diffOf(scene) : [];
+  if (!scene) return [];
+  if (!isRealCapture(id)) return diffOf(scene);
+  return realNodes(id, scene)
+    .filter(({ node }) => node.diff)
+    .map(({ box }) => box);
+}
+
+/** Centro del componente en la captura real, para que los pins de los comentarios caigan encima. */
+export function anchorOn(
+  id: string,
+  name: string,
+  fallback: { x: number; y: number },
+): { x: number; y: number } {
+  if (!isRealCapture(id)) return fallback;
+  const el = sceneElements(id).find((e) => e.name === name);
+  if (!el) return fallback;
+  const round = (v: number) => Math.round(v * 1000) / 1000;
+  return { x: round(el.box.x + el.box.w / 2), y: round(el.box.y + el.box.h / 2) };
 }
 
 function esc(text: string): string {

@@ -109,9 +109,18 @@ test.describe('cuenta', () => {
   test('perfil y contraseña', async ({ page }) => {
     await login(page, DEV, '/settings/profile');
     await page.getByLabel('Nombre').fill('Kevin M.');
+    await page.getByTitle('Hombre joven con gafas y chaqueta de jean').click();
     await page.getByRole('button', { name: 'Guardar' }).click();
     await expect(page.getByText('Perfil actualizado.')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Menú de usuario' })).toContainText('Kevin M.');
+    const menu = page.getByRole('button', { name: 'Menú de usuario' });
+    await expect(menu).toContainText('Kevin M.');
+    await expect(menu.locator('img')).toHaveAttribute('src', /avatars\/a10\.webp$/);
+
+    // Volver a las iniciales quita la imagen.
+    await page.getByTitle('Usar iniciales').click();
+    await page.getByRole('button', { name: 'Guardar' }).click();
+    await expect(page.getByText('Perfil actualizado.').last()).toBeVisible();
+    await expect(menu.locator('img')).toHaveCount(0);
 
     await page.getByLabel('Contraseña actual').fill('no-es-esta');
     await page.getByLabel('Contraseña nueva', { exact: true }).fill('una-clave-bien-larga');

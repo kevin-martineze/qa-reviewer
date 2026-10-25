@@ -26,7 +26,12 @@ export const load: LayoutServerLoad = async ({ locals, cookies, depends, fetch, 
   const users = unwrap(usersResult, url);
   const people: People = {};
   for (const u of users)
-    people[u.id] = { name: u.name, email: u.email, active: u.status === 'active' };
+    people[u.id] = {
+      name: u.name,
+      email: u.email,
+      active: u.status === 'active',
+      avatar: u.avatar,
+    };
 
   return {
     /** Referencia de «ahora» para fechas relativas: la misma en el server y en el navegador. */
@@ -41,7 +46,9 @@ export const load: LayoutServerLoad = async ({ locals, cookies, depends, fetch, 
     recentNotifications: recentResult.ok ? recentResult.data.slice(0, 5) : [],
     isMock,
     mockUsers: isMock
-      ? users.filter((u) => u.status === 'active').map((u) => ({ id: u.id, name: u.name }))
+      ? users
+          .filter((u) => u.status === 'active')
+          .map((u) => ({ id: u.id, name: u.name, avatar: u.avatar }))
       : [],
     sidebarCollapsed: cookies.get(SIDEBAR_COOKIE) === '1',
   };

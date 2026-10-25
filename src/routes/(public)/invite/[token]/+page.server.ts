@@ -21,17 +21,24 @@ export const load: PageServerLoad = async ({ locals, params, fetch, url }) => {
 
 export const actions: Actions = {
   default: async ({ request, params, cookies, locals, fetch }) => {
-    const raw = formObject(await request.formData(), ['name', 'password', 'confirm']);
+    const raw = formObject(await request.formData(), ['name', 'password', 'confirm', 'avatar']);
     const parsed = inviteSchema.safeParse(raw);
-    if (!parsed.success) return fail(400, { name: raw.name, errors: fieldErrors(parsed.error) });
+    if (!parsed.success) {
+      return fail(400, { name: raw.name, avatar: raw.avatar, errors: fieldErrors(parsed.error) });
+    }
 
-    const result = await gateway(locals, fetch).auth.acceptInvite(
-      params.token,
-      parsed.data.name,
-      parsed.data.password,
-    );
+    const { name, password, avatar } = parsed.data;
+    const result = await gateway(locals, fetch).auth.acceptInvite(params.token, {
+      name,
+      password,
+      avatar,
+    });
     if (!result.ok) {
-      return fail(result.error.status || 400, { name: raw.name, error: result.error.message });
+      return fail(result.error.status || 400, {
+        name: raw.name,
+        avatar: raw.avatar,
+        error: result.error.message,
+      });
     }
 
     setSession(cookies, result.data.token);

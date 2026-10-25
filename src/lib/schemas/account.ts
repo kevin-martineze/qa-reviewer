@@ -1,9 +1,11 @@
 import { z } from 'zod';
 
+import { avatarSchema } from './avatar';
 import { passwordSchema } from './password';
 
 export const profileSchema = z.object({
   name: z.string().trim().min(1, 'Escribe tu nombre.').max(80, 'Máximo 80 caracteres.'),
+  avatar: avatarSchema,
 });
 
 export const changePasswordSchema = z

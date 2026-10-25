@@ -3,6 +3,7 @@
 // Cada método refleja un endpoint de docs/architecture/api.md y devuelve Result<T>.
 import type { Result } from './result';
 import type {
+  AcceptInviteInput,
   ActivityEvent,
   Anchor,
   ApiToken,
@@ -23,6 +24,7 @@ import type {
   OrgRole,
   PaginatedResponse,
   Priority,
+  ProfileInput,
   Project,
   ProjectMember,
   ProjectRole,
@@ -92,11 +94,11 @@ export interface AuthGateway {
   logout(): Promise<Result<void>>;
   me(): Promise<Result<SessionUser>>;
   inviteInfo(token: string): Promise<Result<InviteInfo>>;
-  acceptInvite(token: string, name: string, password: string): Promise<Result<LoginResult>>;
+  acceptInvite(token: string, input: AcceptInviteInput): Promise<Result<LoginResult>>;
   requestRecovery(email: string): Promise<Result<void>>;
   recoveryInfo(token: string): Promise<Result<RecoveryInfo>>;
   resetPassword(token: string, password: string): Promise<Result<void>>;
-  updateProfile(name: string): Promise<Result<SessionUser>>;
+  updateProfile(input: ProfileInput): Promise<Result<SessionUser>>;
   changePassword(current: string, next: string): Promise<Result<void>>;
   /** Cierra la sesión en todos los dispositivos (revoca los refresh tokens). */
   logoutEverywhere(): Promise<Result<void>>;
