@@ -31,6 +31,13 @@ export default tseslint.config(
   // archivos sin formatear. Va al final para que pise al resto.
   prettierPlugin,
   {
+    // Scripts de mantenimiento en Node (p. ej. scripts/capture-lideris.mjs). El navegador
+    // también: el código dentro de page.evaluate corre en la página.
+    files: ['scripts/**/*.mjs'],
+    languageOptions: { globals: { ...globals.node, ...globals.browser } },
+    rules: { 'no-console': ['error', { allow: ['warn', 'error'] }] },
+  },
+  {
     files: ['**/*.ts'],
     languageOptions: {
       parser: tseslint.parser,

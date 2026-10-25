@@ -128,6 +128,14 @@ El árbol de rutas está en [layouts.md](layouts.md#árbol-de-rutas).
 - Mientras no exista el API, `$lib/api/types.ts` refleja [api.md](api.md) a mano y el mock lo cumple.
 - Cuando el API publique `/docs-json`, los tipos se generan con `openapi-typescript` en `$lib/api/generated/` (script `pnpm gen:api`) y `types.ts` solo los reexporta. Prohibido duplicar tipos del contrato a mano después de eso.
 
+## Capturas del mock
+
+- Por defecto el mock pinta escenas SVG sintéticas (`adapters/mock/scenes.ts`), servidas por `/mock-assets/<escena>.svg`.
+- En tu máquina puedes usar capturas reales de Lideris: con Lideris corriendo, `node scripts/capture-lideris.mjs` (variables `LIDERIS_URL`, `PO_ID`, `PO_QUOTED_ID`, `SUPPLIER_ID`, `PURCHASE_ORDER_ID` opcionales). La primera vez abre Chrome para que inicies sesión a mano.
+- El script escribe `fixtures-private/lideris/` (raíz, gitignored): un PNG por escena, la sesión guardada y `manifest.json` con las cajas medidas de cada componente. El mock lo lee al arrancar: usa el PNG, ancla inspector, diff y comentarios a las cajas reales, y compara real con real (si falta la otra versión, no ofrece comparar). Reinicia el dev server tras capturar.
+- Nunca bajo `static/`: se copiaría al build y quedaría público. El repo es público; esas capturas pueden tener datos reales.
+- Los módulos con datos de pacientes (Autorizaciones, Citas) se quedan en SVG.
+
 ## Pruebas
 
 | Nivel    | Herramienta                                     | Qué cubre                                                                                                                                        |

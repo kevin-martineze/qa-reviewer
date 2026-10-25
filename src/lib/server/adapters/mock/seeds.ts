@@ -38,8 +38,10 @@ import type {
   Verdict,
 } from '$lib/api/types';
 import {
+  anchorOn,
   assetUrl,
   genericScene,
+  pairedUrl,
   registerScene,
   sceneDiff,
   sceneElements,
@@ -292,10 +294,10 @@ function poScreen(
   return {
     ...base,
     img: assetUrl(scenes.img),
-    previous: scenes.previous ? assetUrl(scenes.previous) : null,
-    before: scenes.before ? assetUrl(scenes.before) : null,
+    previous: pairedUrl(scenes.img, scenes.previous),
+    before: pairedUrl(scenes.img, scenes.before),
     elements: sceneElements(scenes.img),
-    diff: scenes.previous ? sceneDiff(scenes.img) : [],
+    diff: pairedUrl(scenes.img, scenes.previous) ? sceneDiff(scenes.img) : [],
   };
 }
 
@@ -484,9 +486,10 @@ function genericScreens(
       id,
       genericScene({ kind: s.kind, module, title: s.title, ...change }),
     );
-    const before = s.compare
-      ? registerScene(`${id}-base`, genericScene({ kind: s.kind, module, title: s.title }))
-      : null;
+    if (s.compare) {
+      registerScene(`${id}-base`, genericScene({ kind: s.kind, module, title: s.title }));
+    }
+    const before = s.compare ? pairedUrl(id, `${id}-base`) : null;
     const changes = change.moduleNav
       ? ['Se agrega la 2.ª navegación del módulo en la página hija.']
       : change.alert
@@ -1027,7 +1030,7 @@ export const SEED_COMMENTS: Comment[] = [
     author: 'u2',
     createdAt: ago(DAY + 12 * MIN),
     body: 'El anillo primary/60 se pierde con brillo alto. Probemos un fondo primary/5 en la fila editada, además del borde.',
-    anchor: { x: 0.45, y: 0.44 },
+    anchor: anchorOn('po-changed-r1', 'itemRow · Card', { x: 0.45, y: 0.44 }),
     el: refOf('po-changed-r1', 'itemRow · Card'),
     resolved: false,
     followUp: null,
@@ -1048,7 +1051,7 @@ export const SEED_COMMENTS: Comment[] = [
     author: 'u2',
     createdAt: ago(DAY + 8 * MIN),
     body: 'A 720 px la barra se come mucho alto. ¿La bajamos a una sola línea con el contador a la izquierda?',
-    anchor: { x: 0.5, y: 0.93 },
+    anchor: anchorOn('po-scroll-r1', 'Barra de guardado', { x: 0.5, y: 0.93 }),
     el: refOf('po-scroll-r1', 'Barra de guardado'),
     resolved: false,
     followUp: null,
@@ -1069,7 +1072,7 @@ export const SEED_COMMENTS: Comment[] = [
     author: 'u2',
     createdAt: ago(DAY + 30 * MIN),
     body: 'Botón correcto. Variante outline está bien junto al buscador.',
-    anchor: { x: 0.94, y: 0.31 },
+    anchor: anchorOn('po-normal', 'Button · Editar cantidades', { x: 0.94, y: 0.31 }),
     el: refOf('po-normal', 'Button · Editar cantidades'),
     resolved: true,
     followUp: 'resolved',
@@ -1083,7 +1086,7 @@ export const SEED_COMMENTS: Comment[] = [
     author: 'u4',
     createdAt: ago(DAY - HOUR),
     body: '@Laura la alerta compite con el encabezado. ¿La llevamos a la tarjeta de documentos?',
-    anchor: { x: 0.5, y: 0.15 },
+    anchor: anchorOn('qr-0010-a', 'Alert', { x: 0.5, y: 0.15 }),
     el: refOf('qr-0010-a', 'Alert'),
     resolved: false,
     followUp: null,

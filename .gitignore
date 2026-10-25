@@ -14,6 +14,8 @@ test-results
 
 # Imágenes reales de capturas (nunca al repo público)
 static/fixtures-private/
+# Capturas reales locales del mock (fuera de static/ para que nunca entren al build)
+fixtures-private/
 
 # IDE
 .idea
