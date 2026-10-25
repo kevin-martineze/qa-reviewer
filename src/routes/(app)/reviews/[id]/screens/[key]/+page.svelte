@@ -225,10 +225,11 @@
 {/snippet}
 
 {#snippet toolbar()}
-  <div class="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2">
+  <!-- Navegación entre pantallas al centro: que no se confunda con «Volver». -->
+  <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-x-4 px-4 py-2">
     <a
       href={resolve('/(app)/reviews/[id]/(detail)', { id: review.id })}
-      class={buttonVariants({ variant: 'ghost', size: 'icon-sm' })}
+      class={cn(buttonVariants({ variant: 'ghost', size: 'icon-sm' }), 'justify-self-start')}
       aria-label="Volver a la revisión"
     >
       <ArrowLeft />
@@ -244,8 +245,8 @@
       >
         <ChevronLeft />
       </button>
-      <div class="min-w-0 px-1">
-        <p class="flex items-center gap-2 truncate text-sm font-medium">
+      <div class="min-w-0 px-1 text-center">
+        <p class="flex items-center justify-center gap-2 truncate text-sm font-medium">
           <span class="font-mono text-xs text-muted-foreground uppercase">{screen.key}</span>
           {screen.title}
           <ToneBadge tone={VERDICT[screen.verdict].tone}>{VERDICT[screen.verdict].label}</ToneBadge>
@@ -267,7 +268,7 @@
       </button>
     </div>
 
-    <div class="ml-auto flex flex-wrap items-center gap-2">
+    <div class="flex min-w-0 flex-wrap items-center justify-end gap-2">
       {#if targets.length > 1}
         <div
           class="inline-flex rounded-md border p-0.5 text-xs"
