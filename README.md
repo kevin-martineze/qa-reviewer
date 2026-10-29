@@ -109,6 +109,7 @@ Cuentas de demo (contraseña `demo1234`, solo en el mock y en la semilla del API
 | `pnpm check` · `pnpm lint` · `pnpm format` | svelte-check, ESLint y Prettier                                                       |
 | `pnpm test`                                | Pruebas unitarias (Vitest) de dominio, esquemas y adaptadores                         |
 | `pnpm test:e2e`                            | E2E con Playwright contra el mock                                                     |
+| `pnpm test:e2e:api`                        | La misma suite contra el API real (`E2E_API_URL`, arrancado limpio con `pnpm demo`)   |
 | `pnpm seed:export`                         | Exporta los datos del mock como semilla de demo del API (`qa-reviewer-api/seed/demo`) |
 | `pnpm readme:shots`                        | Regenera las capturas y el banner de este README                                      |
 
@@ -137,8 +138,8 @@ scripts/                    anonimizado de capturas, export de la semilla, captu
 | 1    | Web completa contra el mock: revisión, visor, rondas, feedback, métricas, ajustes, admin | Hecho     |
 | 2    | API: sesión, cuenta, invitaciones, recuperación, storage, correo, outbox                 | Hecho     |
 | 3    | API: semilla de demo compartida con el mock                                              | Hecho     |
-| 4    | API: organización, proyectos, revisiones, feedback, notificaciones, tokens, métricas     | Pendiente |
-| 5    | E2E de la web también contra el API real; tipos generados desde OpenAPI                  | Pendiente |
+| 4    | API: organización, proyectos, revisiones, feedback, notificaciones, tokens, métricas     | Hecho     |
+| 5    | E2E de la web también contra el API real; tipos generados desde OpenAPI                  | En curso  |
 | 6    | Skill `/design-review`: captura, enmascarado, manifiesto, rondas y `status`              | Pendiente |
 | 7    | Integraciones: comentario y check en GitHub, comentario en Plane, correo; jobs de plazos | Pendiente |
 | 8    | CI en ambos repos y despliegue (web en Vercel, API con Mongo y S3)                       | Pendiente |

@@ -166,6 +166,11 @@ export function mockGateway(locals: App.Locals): Gateways {
     return findMentions(body, people);
   }
 
+  /** Un proyecto que la persona no ve «no existe» (404), aunque exista. */
+  function seesProject(me: SessionUser, projectId: string): boolean {
+    return store.projects.some((p) => p.id === projectId) && visibleIds(me).has(projectId);
+  }
+
   function openForFeedback(review: Review): Result<Review> {
     if (review.status === 'closed') {
       return err(409, 'reviews.stale_status', 'La revisión está cerrada.');
@@ -1014,6 +1019,11 @@ export function mockGateway(locals: App.Locals): Gateways {
       },
 
       async create(projectId: string, label: string) {
+        const viewer = session();
+        if (!viewer.ok) return viewer;
+        if (!seesProject(viewer.data, projectId)) {
+          return err(404, 'projects.not_found', 'Proyecto no encontrado.');
+        }
         const me = authorize('tokens:own', projectId);
         if (!me.ok) return me;
         const random = Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) =>
@@ -1106,6 +1116,11 @@ export function mockGateway(locals: App.Locals): Gateways {
     /* ── Métricas ────────────────────────────────────────────────────── */
     reports: {
       async overview(filters: ReportFilters) {
+        const viewer = session();
+        if (!viewer.ok) return viewer;
+        if (filters.project && !seesProject(viewer.data, filters.project)) {
+          return err(404, 'projects.not_found', 'Proyecto no encontrado.');
+        }
         const me = authorize('reports:view', filters.project ?? null);
         if (!me.ok) return me;
         const now = new Date();
@@ -1182,7 +1197,9 @@ export function mockGateway(locals: App.Locals): Gateways {
           avgRounds: reviews.length
             ? Math.round((reviews.reduce((n, r) => n + r.round, 0) / reviews.length) * 10) / 10
             : 0,
-          pendingByDesigner: [...designers].map(([userId, row]) => ({ userId, ...row })),
+          pendingByDesigner: [...designers]
+            .map(([userId, row]) => ({ userId, ...row }))
+            .sort((a, b) => b.pending - a.pending || b.overdue - a.overdue),
           changesByModule: [...modules]
             .map(([module, row]) => ({ module, ...row }))
             .sort((a, b) => b.changes - a.changes),
