@@ -39,14 +39,14 @@ La columna «Puerto» es el método de `$lib/api/ports.ts` que lo consume; el ad
 
 ### Revisiones
 
-| Método  | Ruta                     | Permiso          | Puerto                | Qué hace                                                                                                                    |
-| ------- | ------------------------ | ---------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `GET`   | `/reviews`               | `reviews:read`   | `reviews.list`        | `?status[]&project&author&assignee&priority&overdue&q&sort=updated\|due\|priority&page&limit` → `PaginatedResponse<Review>` |
-| `GET`   | `/reviews/:id`           | `reviews:read`   | `reviews.get`         | Revisión con pantallas, rondas y URLs firmadas de lectura (TTL 15 min).                                                     |
-| `GET`   | `/reviews/:id/activity`  | `reviews:read`   | `reviews.activity`    | `ActivityEvent[]`, más reciente primero.                                                                                    |
-| `PUT`   | `/reviews/:id/assignees` | `reviews:assign` | `reviews.assign`      | `{ assignees: userId[] }`. Solo diseñadores y líderes del proyecto.                                                         |
-| `PATCH` | `/reviews/:id`           | `reviews:assign` | `reviews.setPriority` | `{ priority }`.                                                                                                             |
-| `POST`  | `/reviews/:id/reopen`    | `reviews:reopen` | `reviews.reopen`      | `{ reason }`. Anula el último envío y vuelve a `in_review`; avisa al autor.                                                 |
+| Método  | Ruta                     | Permiso          | Puerto                | Qué hace                                                                                                                                                                                                   |
+| ------- | ------------------------ | ---------------- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET`   | `/reviews`               | `reviews:read`   | `reviews.list`        | `?status&project&author&assignee&priority&overdue&q&sort=updated\|due\|priority&page&limit` → `PaginatedResponse<Review>`. `status` se repite (`status=open&status=in_review`); `overdue=true` o se omite. |
+| `GET`   | `/reviews/:id`           | `reviews:read`   | `reviews.get`         | Revisión con pantallas, rondas y URLs firmadas de lectura (TTL 15 min).                                                                                                                                    |
+| `GET`   | `/reviews/:id/activity`  | `reviews:read`   | `reviews.activity`    | `ActivityEvent[]`, más reciente primero.                                                                                                                                                                   |
+| `PUT`   | `/reviews/:id/assignees` | `reviews:assign` | `reviews.assign`      | `{ assignees: userId[] }`. Solo diseñadores y líderes del proyecto.                                                                                                                                        |
+| `PATCH` | `/reviews/:id`           | `reviews:assign` | `reviews.setPriority` | `{ priority }`.                                                                                                                                                                                            |
+| `POST`  | `/reviews/:id/reopen`    | `reviews:reopen` | `reviews.reopen`      | `{ reason }`. Anula el último envío y vuelve a `in_review`; avisa al autor.                                                                                                                                |
 
 ### Feedback
 
