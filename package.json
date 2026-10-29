@@ -19,6 +19,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "test:e2e:api": "E2E_API_URL=${E2E_API_URL:-http://localhost:3000} playwright test",
     "prepare": "husky",
     "readme:shots": "playwright test -c scripts/readme/playwright.config.ts",
     "seed:export": "node scripts/export-demo-seed.mjs"
