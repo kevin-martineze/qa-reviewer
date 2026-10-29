@@ -30,7 +30,7 @@ import type {
   User,
   Verdict,
 } from '$lib/api/types';
-import { dueState } from '$lib/domain/due';
+import { addBusinessDays, dueState } from '$lib/domain/due';
 import { PRIORITY } from '$lib/domain/labels';
 import { permissionsFor, visibleProjectIds, type Permission } from '$lib/domain/permissions';
 import { DEMO_PASSWORD, ORG, type InviteSeed } from './seeds';
@@ -118,7 +118,8 @@ export function mockGateway(locals: App.Locals): Gateways {
   }
 
   function findReview(id: string): Result<Review> {
-    const review = store.reviews.find((r) => r.id === id);
+    // Un borrador (la skill aún no lo publica) no existe para la web.
+    const review = store.reviews.find((r) => r.id === id && r.status !== 'draft');
     if (!review) return err(404, 'reviews.not_found', 'Esta revisión no existe o fue eliminada.');
     return ok(review);
   }
@@ -126,14 +127,15 @@ export function mockGateway(locals: App.Locals): Gateways {
   function reviewFor(id: string, perm: Permission): Result<{ me: SessionUser; review: Review }> {
     const review = findReview(id);
     if (!review.ok) return review;
-    const me = authorize(perm, review.data.project);
-    if (!me.ok) {
-      // Sin acceso de lectura al proyecto, la revisión «no existe» (no se filtra su existencia).
-      if (me.error.status === 403 && perm === 'reviews:read') {
-        return err(404, 'reviews.not_found', 'Esta revisión no existe o fue eliminada.');
-      }
-      return me;
+    // Sin acceso de lectura al proyecto, la revisión «no existe» (no se filtra su existencia).
+    const reader = authorize('reviews:read', review.data.project);
+    if (!reader.ok) {
+      return reader.error.status === 403
+        ? err(404, 'reviews.not_found', 'Esta revisión no existe o fue eliminada.')
+        : reader;
     }
+    const me = authorize(perm, review.data.project);
+    if (!me.ok) return me;
     return ok({ me: me.data, review: review.data });
   }
 
@@ -207,7 +209,7 @@ export function mockGateway(locals: App.Locals): Gateways {
         const now = new Date();
         const q = filters.q?.trim().toLowerCase();
 
-        let items = store.reviews.filter((r) => visible.has(r.project));
+        let items = store.reviews.filter((r) => visible.has(r.project) && r.status !== 'draft');
         if (filters.status?.length) {
           const statuses = new Set(filters.status);
           items = items.filter((r) => statuses.has(r.status));
@@ -225,14 +227,19 @@ export function mockGateway(locals: App.Locals): Gateways {
         }
 
         const sort = filters.sort ?? 'updated';
+        const byUpdated = (a: Review, b: Review): number =>
+          Date.parse(b.updatedAt) - Date.parse(a.updatedAt);
         items = [...items].sort((a, b) => {
-          if (sort === 'priority') return PRIORITY[a.priority].rank - PRIORITY[b.priority].rank;
+          if (sort === 'priority') {
+            return PRIORITY[a.priority].rank - PRIORITY[b.priority].rank || byUpdated(a, b);
+          }
           if (sort === 'due') {
             const da = a.dueAt ? Date.parse(a.dueAt) : Number.POSITIVE_INFINITY;
             const db = b.dueAt ? Date.parse(b.dueAt) : Number.POSITIVE_INFINITY;
-            return da - db;
+            // Infinity - Infinity da NaN: dos sin plazo empatan.
+            return (da === db ? 0 : da - db) || byUpdated(a, b);
           }
-          return Date.parse(b.updatedAt) - Date.parse(a.updatedAt);
+          return byUpdated(a, b);
         });
 
         const limit = filters.limit ?? 20;
@@ -260,17 +267,26 @@ export function mockGateway(locals: App.Locals): Gateways {
         const found = reviewFor(id, 'reviews:assign');
         if (!found.ok) return found;
         const { me, review } = found.data;
+        if (review.status === 'closed') {
+          return err(409, 'reviews.stale_status', 'La revisión está cerrada.');
+        }
+        const active = new Set(store.users.filter((u) => u.status === 'active').map((u) => u.id));
         const allowed = new Set(
           store.memberships
             .filter(
               (m) =>
                 m.projectId === review.project &&
-                (m.role === 'designer' || m.role === 'design_lead'),
+                (m.role === 'designer' || m.role === 'design_lead') &&
+                m.userId !== review.author &&
+                active.has(m.userId),
             )
             .map((m) => m.userId),
         );
-        if (!assignees.length || assignees.some((a) => !allowed.has(a))) {
-          return err(400, 'reviews.invalid_assignees', 'Elige diseñadores del proyecto.');
+        const invalid = assignees.filter((a) => !allowed.has(a));
+        if (!assignees.length || invalid.length) {
+          return err(400, 'reviews.invalid_assignees', 'Elige diseñadores del proyecto.', {
+            userIds: invalid,
+          });
         }
         const before = new Set(review.assignees);
         for (const a of review.assignees) {
@@ -307,6 +323,9 @@ export function mockGateway(locals: App.Locals): Gateways {
       async setPriority(id: string, priority: Priority) {
         const found = reviewFor(id, 'reviews:assign');
         if (!found.ok) return found;
+        if (found.data.review.status === 'closed') {
+          return err(409, 'reviews.stale_status', 'La revisión está cerrada.');
+        }
         found.data.review.priority = priority;
         touch(found.data.review);
         return ok(found.data.review);
@@ -323,6 +342,9 @@ export function mockGateway(locals: App.Locals): Gateways {
         if (round) round.submission = null;
         review.status = 'in_review';
         review.pr.check = 'pending';
+        // Plazo nuevo desde ahora: si no, la revisión saldría vencida al instante.
+        const slaDays = store.projects.find((p) => p.id === review.project)?.slaDays ?? 2;
+        review.dueAt = addBusinessDays(new Date(), slaDays).toISOString();
         touch(review);
         logActivity('review_reopened', me.id, review.id, `anuló el envío: «${reason}»`);
         notify(review.author, 'review_submitted', me.id, `${me.name} reabrió ${review.id}`, {
