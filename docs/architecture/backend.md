@@ -1,6 +1,6 @@
 # Arquitectura del backend (`qa-reviewer-api`)
 
-Stack y estilo **iguales a los micros de Lideris** (referencia: `micro-procurement/docs/ARCHITECTURE.md`): NestJS 11 sobre Fastify, MongoDB con Mongoose, validación con Joi, Swagger generado desde el código y S3 con URLs firmadas. Así cualquier dev backend del equipo lo entiende sin curva.
+Stack: NestJS 11 sobre Fastify, MongoDB con Mongoose, validación con Joi, Swagger generado desde el código y almacenamiento de objetos con URLs firmadas (S3 o disco local en desarrollo).
 
 > Este documento vive aquí mientras se crea el repo del API. Al crearlo, pasa a `qa-reviewer-api/docs/ARCHITECTURE.md`.
 
@@ -67,7 +67,7 @@ Claves de objetos en S3: `projects/<projectId>/reviews/<reviewId>/r<round>/<scre
 - Configuración validada con Joi al arrancar (`MONGO_URI`, `S3_BUCKET`, `S3_REGION`, `JWT_SECRET`, `GITHUB_TOKEN`, `GITHUB_WEBHOOK_SECRET`, `PLANE_TOKEN`, `PUBLIC_WEB_URL`).
 - Docker y `docker-compose` (Mongo + MinIO para desarrollo local).
 - Logs estructurados con `requestId`; healthchecks para el balanceador.
-- La documentación es código: el esquema Joi de cada request genera su body en OpenAPI, y una prueba falla si una ruta no documenta su respuesta (igual que micro-procurement).
+- La documentación es código: el esquema Joi de cada request genera su body en OpenAPI, y una prueba falla si una ruta no documenta su respuesta.
 
 ## Pruebas
 

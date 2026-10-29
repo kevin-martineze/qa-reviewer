@@ -266,19 +266,15 @@ Un `+error.svelte` se dibuja **dentro** de los layouts superiores al segmento qu
 - Errores por campo van aparte (`{ errors }`, `{ inviteErrors }`…) y se pintan junto al campo con `FormField`, no en un toast. Si el form vive en un diálogo, la página lo reabre cuando llegan errores.
 - Confirmaciones destructivas: `ConfirmDialog` (molecule) con los inputs ocultos como snippet `fields`.
 
-## Lo que no copiamos de lideris-v2
+## Atajos que evitamos
 
-lideris-v2 creció rápido y tiene atajos que aquí se evitan desde el principio:
-
-| En lideris-v2                                                                                             | Problema                                      | En qa-reviewer                                  |
-| --------------------------------------------------------------------------------------------------------- | --------------------------------------------- | ----------------------------------------------- |
-| `(app)/+layout.svelte`: `isTurner` decide si se pinta el `AppShell`                                       | El chrome depende de un `if` sobre la URL     | Grupo propio con su layout (regla 1)            |
-| `preorders/[id]/+layout.svelte`: `isQuoteWizardRoute` quita cabecera y tabs                               | Igual: condición sobre `pathname`             | Grupo `(detail)` (regla 1)                      |
-| `(purchases)/+layout.svelte`: el store `moduleSidebar` registra el rail y `MAIN_VIEWS` lo oculta por ruta | Singleton de módulo más lista de rutas a mano | El layout pasa el snippet al template (regla 4) |
-| `DetailWithSidePanel.svelte` importa DTOs clínicos                                                        | El template queda atado a un dominio          | Template puro (regla 2)                         |
-| Cabecera y tabs escritas dentro de `+layout.svelte`                                                       | El markup se duplica entre detalles           | `DetailTemplate` reutilizable (regla 3)         |
-
-Lo que sí se copia: `PageLayout` y `ListTemplate` con regiones como snippets, el skeleton al cambiar de tab y los grupos `(app)`/`(auth)`.
+| Atajo                                                               | Problema                                         | En qa-reviewer                                  |
+| ------------------------------------------------------------------- | ------------------------------------------------ | ----------------------------------------------- |
+| Un `if` sobre `pathname` en el layout decide si hay shell           | El chrome depende de una condición escondida     | Grupo propio con su layout (regla 1)            |
+| Una lista de rutas que quitan cabecera o pestañas                   | Lo mismo, y la lista se desactualiza             | Grupo `(detail)` (regla 1)                      |
+| Un store global donde cada página registra su menú lateral          | Estado de módulo compartido entre peticiones SSR | El layout pasa el snippet al template (regla 4) |
+| Un template que importa tipos del dominio                           | El template solo sirve para una pantalla         | Template puro (regla 2)                         |
+| Cabecera y pestañas escritas a mano dentro de cada `+layout.svelte` | El markup se duplica entre detalles              | `DetailTemplate` reutilizable (regla 3)         |
 
 ## Pruebas
 

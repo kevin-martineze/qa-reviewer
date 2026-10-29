@@ -13,7 +13,7 @@
 
 <!--
   Override de marca: el contenedor que scrollea es este, así que la sombra
-  `scroll-x-hint` (CLAUDE.md regla 35) va aquí y no en un div externo.
+  `scroll-x-hint` (CLAUDE.md §8: tablas con scroll horizontal) va aquí y no en un div externo.
 -->
 <div data-slot="table-container" class="scroll-x-hint relative w-full overflow-x-auto">
   <table

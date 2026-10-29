@@ -25,7 +25,7 @@ Project 1───* Review 1───* Screen 1───* Capture
 ```
 
 - **Review** es el agregado raíz. Las pantallas y sus veredictos van **embebidos**, porque siempre se leen y se cambian con la revisión. Los comentarios van en su propia colección (`qa_comments`) para que el documento no crezca sin límite.
-- **Snapshots, no joins** (mismo criterio que micro-procurement): el PR (número, título, base, head, autor) y la tarjeta (clave, título) se copian en la revisión al crearla. Las notificaciones no consultan GitHub ni Plane para armar su texto.
+- **Snapshots, no joins**: el PR (número, título, base, head, autor) y la tarjeta (clave, título) se copian en la revisión al crearla. Las notificaciones no consultan GitHub ni Plane para armar su texto.
 - Número legible por proyecto: `QR-0001`, `QR-0002`… (`qa_counters`, nunca se reutiliza).
 
 ## Estados

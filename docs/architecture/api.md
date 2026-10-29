@@ -1,6 +1,6 @@
 # Contrato del API (v1)
 
-Base: `https://<host>/v1`. JSON en `camelCase`. La **fuente de verdad** es el OpenAPI que publica el API en `/docs-json`, generado desde el código como en micro-procurement. Este documento es la guía de diseño y el código manda.
+Base: `https://<host>/v1`. JSON en `camelCase`. La **fuente de verdad** es el OpenAPI que publica el API en `/docs-json`, generado desde el código. Este documento es la guía de diseño y el código manda.
 
 ## Convenciones
 

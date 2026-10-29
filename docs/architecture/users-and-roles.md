@@ -3,7 +3,7 @@
 ## Niveles
 
 ```
-Organización (p. ej. Pangea)
+Organización
  ├── Usuarios          rol de organización: owner · admin · member
  └── Proyectos (p. ej. Lideris)
       └── Miembros     rol de proyecto: project_admin · design_lead · designer · developer · viewer
