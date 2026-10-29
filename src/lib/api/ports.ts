@@ -119,6 +119,14 @@ export interface AuditFilters {
   limit?: number;
 }
 
+/** `POST /projects`. `id` es el slug: minúsculas, números y guiones; no cambia. */
+export interface NewProject {
+  id: string;
+  name: string;
+  repo?: string;
+  planeKey?: string;
+}
+
 export type ProjectPatch = Partial<
   Pick<
     Project,
@@ -140,6 +148,7 @@ export interface DirectoryGateway {
   listInvitations(): Promise<Result<Invitation[]>>;
   invite(input: NewInvitation): Promise<Result<Invitation>>;
   revokeInvitation(id: string): Promise<Result<void>>;
+  createProject(input: NewProject): Promise<Result<Project>>;
   listProjects(): Promise<Result<Project[]>>;
   getProject(id: string): Promise<Result<Project>>;
   updateProject(id: string, patch: ProjectPatch): Promise<Result<Project>>;

@@ -105,6 +105,7 @@ export const AUDIT_TYPE: Record<AuditType, string> = {
   member_removed: 'Miembro quitado',
   token_created: 'Token creado',
   token_revoked: 'Token revocado',
+  project_created: 'Proyecto creado',
   project_updated: 'Proyecto actualizado',
 };
 

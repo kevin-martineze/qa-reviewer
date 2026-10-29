@@ -80,6 +80,7 @@ export function httpGateway(locals: App.Locals, fetchFn?: typeof fetch): Gateway
       listInvitations: () => api.request('GET', '/invitations'),
       invite: (input) => api.request('POST', '/invitations', input),
       revokeInvitation: (id) => api.send('DELETE', `/invitations/${enc(id)}`),
+      createProject: (input) => api.request('POST', '/projects', input),
       listProjects: () => api.request('GET', '/projects'),
       getProject: (id) => api.request('GET', `/projects/${enc(id)}`),
       updateProject: (id, patch) => api.request('PATCH', `/projects/${enc(id)}`, patch),

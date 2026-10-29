@@ -7,6 +7,7 @@ import type {
   Gateways,
   NewComment,
   NewInvitation,
+  NewProject,
   NotificationFilters,
   ProjectPatch,
   ReviewFilters,
@@ -74,6 +75,10 @@ function inviteStatus(invite: InviteSeed): InviteStatus {
 
 function nameOf(id: string): string {
   return store.users.find((u) => u.id === id)?.name ?? id;
+}
+
+function projectName(id: string): string {
+  return store.projects.find((p) => p.id === id)?.name ?? id;
 }
 
 function median(values: number[]): number {
@@ -675,6 +680,9 @@ export function mockGateway(locals: App.Locals): Gateways {
         if (!me.ok) return me;
         const user = store.users.find((u) => u.id === userId);
         if (!user) return err(404, 'users.not_found', 'Usuario no encontrado.');
+        if (user.id === me.data.id) {
+          return err(409, 'users.self', 'No puedes cambiar tu propio rol.');
+        }
         if (user.orgRole === 'owner' && me.data.orgRole !== 'owner') {
           return err(403, 'auth.forbidden', 'Solo el owner cambia el rol de otro owner.');
         }
@@ -701,8 +709,11 @@ export function mockGateway(locals: App.Locals): Gateways {
       },
 
       async invite(input: NewInvitation) {
-        const me = authorize('users:invite', null);
+        const me = authorize(input.role === 'owner' ? 'org:manage' : 'users:invite', null);
         if (!me.ok) return me;
+        if (input.projects.some((m) => !store.projects.some((p) => p.id === m.projectId))) {
+          return err(400, 'invite.invalid_projects', 'Alguno de los proyectos elegidos no existe.');
+        }
         const email = input.email.trim().toLowerCase();
         if (store.users.some((u) => u.email === email)) {
           return err(409, 'users.exists', 'Ya hay un usuario con ese correo.');
@@ -746,6 +757,36 @@ export function mockGateway(locals: App.Locals): Gateways {
         return ok(undefined);
       },
 
+      async createProject(input: NewProject) {
+        const me = authorize('projects:create', null);
+        if (!me.ok) return me;
+        const id = input.id.trim().toLowerCase();
+        if (store.projects.some((p) => p.id === id)) {
+          return err(409, 'projects.exists', 'Ya hay un proyecto con ese identificador.');
+        }
+        const repo = input.repo?.trim() ?? '';
+        const planeKey = input.planeKey?.trim() ?? '';
+        const project: Project = {
+          id,
+          name: input.name.trim(),
+          repo,
+          planeKey,
+          slaDays: 2,
+          strategy: 'manual',
+          moduleRules: [],
+          integrations: {
+            github: { connected: false, repo, checkName: 'design-review', commentOnPr: true },
+            plane: { connected: false, projectKey: planeKey, commentOnCard: true },
+          },
+          maskSelectors: [],
+          designRules: [],
+          reviewsCount: 0,
+        };
+        store.projects.push(project);
+        logAudit('project_created', me.data.id, id, `creó el proyecto ${project.name}`);
+        return ok(project);
+      },
+
       async listProjects() {
         const me = session();
         if (!me.ok) return me;
@@ -755,7 +796,8 @@ export function mockGateway(locals: App.Locals): Gateways {
             .filter((p) => visible.has(p.id))
             .map((p) => ({
               ...p,
-              reviewsCount: store.reviews.filter((r) => r.project === p.id).length,
+              reviewsCount: store.reviews.filter((r) => r.project === p.id && r.status !== 'draft')
+                .length,
             })),
         );
       },
@@ -771,6 +813,22 @@ export function mockGateway(locals: App.Locals): Gateways {
         if (!me.ok) return me;
         const project = findProject(id);
         if (!project.ok) return project;
+        if (patch.moduleRules) {
+          const members = new Set(
+            store.memberships.filter((m) => m.projectId === id).map((m) => m.userId),
+          );
+          const strangers = patch.moduleRules
+            .map((r) => r.userId)
+            .filter((userId) => !members.has(userId));
+          if (strangers.length) {
+            return err(
+              400,
+              'projects.invalid_rules',
+              'Las reglas por módulo solo pueden asignar a miembros del proyecto.',
+              { userIds: [...new Set(strangers)] },
+            );
+          }
+        }
         Object.assign(project.data, patch);
         logAudit(
           'project_updated',
@@ -783,19 +841,39 @@ export function mockGateway(locals: App.Locals): Gateways {
 
       async listMembers(projectId: string) {
         const me = authorize('reviews:read', projectId);
-        if (!me.ok) return me;
+        if (!me.ok) {
+          return me.error.status === 403
+            ? err(404, 'projects.not_found', 'Proyecto no encontrado.')
+            : me;
+        }
         return ok(store.memberships.filter((m) => m.projectId === projectId));
       },
 
       async addMember(projectId: string, userId: string, role) {
         const me = authorize('members:manage', projectId);
         if (!me.ok) return me;
+        const project = findProject(projectId);
+        if (!project.ok) return project;
+        const user = store.users.find((u) => u.id === userId);
+        if (!user) return err(404, 'users.not_found', 'Usuario no encontrado.');
+        if (user.status === 'inactive') {
+          return err(
+            409,
+            'users.inactive',
+            'La cuenta está desactivada: reactívala antes de agregarla.',
+          );
+        }
         if (store.memberships.some((m) => m.projectId === projectId && m.userId === userId)) {
           return err(409, 'members.exists', 'Ya es miembro del proyecto.');
         }
         const member = { projectId, userId, role };
         store.memberships.push(member);
-        logAudit('member_added', me.data.id, userId, `agregó a ${nameOf(userId)} al proyecto`);
+        logAudit(
+          'member_added',
+          me.data.id,
+          userId,
+          `agregó a ${user.name} a ${project.data.name}`,
+        );
         return ok(member);
       },
 
@@ -811,7 +889,7 @@ export function mockGateway(locals: App.Locals): Gateways {
           'role_changed',
           me.data.id,
           userId,
-          `cambió el rol de ${nameOf(userId)} a ${role}`,
+          `cambió el rol de ${nameOf(userId)} en ${projectName(projectId)} a ${role}`,
         );
         return ok(member);
       },
@@ -822,10 +900,20 @@ export function mockGateway(locals: App.Locals): Gateways {
         if (userId === me.data.id) {
           return err(409, 'members.self', 'No puedes quitarte a ti mismo.');
         }
+        if (!store.memberships.some((m) => m.projectId === projectId && m.userId === userId)) {
+          return err(404, 'members.not_found', 'No es miembro del proyecto.');
+        }
         store.memberships = store.memberships.filter(
           (m) => !(m.projectId === projectId && m.userId === userId),
         );
-        logAudit('member_removed', me.data.id, userId, `quitó a ${nameOf(userId)} del proyecto`);
+        const project = store.projects.find((p) => p.id === projectId);
+        if (project) project.moduleRules = project.moduleRules.filter((r) => r.userId !== userId);
+        logAudit(
+          'member_removed',
+          me.data.id,
+          userId,
+          `quitó a ${nameOf(userId)} de ${projectName(projectId)}`,
+        );
         return ok(undefined);
       },
 
