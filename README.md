@@ -136,7 +136,7 @@ scripts/                    anonimizado de capturas, export de la semilla, captu
 | ---- | ---------------------------------------------------------------------------------------- | --------- |
 | 1    | Web completa contra el mock: revisión, visor, rondas, feedback, métricas, ajustes, admin | Hecho     |
 | 2    | API: sesión, cuenta, invitaciones, recuperación, storage, correo, outbox                 | Hecho     |
-| 3    | API: semilla de demo compartida con el mock                                              | En curso  |
+| 3    | API: semilla de demo compartida con el mock                                              | Hecho     |
 | 4    | API: organización, proyectos, revisiones, feedback, notificaciones, tokens, métricas     | Pendiente |
 | 5    | E2E de la web también contra el API real; tipos generados desde OpenAPI                  | Pendiente |
 | 6    | Skill `/design-review`: captura, enmascarado, manifiesto, rondas y `status`              | Pendiente |
