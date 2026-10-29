@@ -10,17 +10,36 @@ El dev ejecuta la skill `/design-review` en su sesión de Claude Code. La skill 
 | -------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------- |
 | Plataforma web (este repo) | `qa-reviewer`                                                           | SvelteKit 2 + Svelte 5 (runes) + TypeScript + Tailwind v4 + shadcn-svelte |
 | API                        | [`qa-reviewer-api`](https://github.com/kevin-martineze/qa-reviewer-api) | NestJS 11 + Fastify + MongoDB (Mongoose) + S3                             |
-| Skill de captura           | dentro de `qa-reviewer-api/skill` o repo propio (por decidir)           | Skill de Claude Code + Playwright                                         |
+| Skill de captura           | `qa-reviewer-api/skill` (en construcción)                               | Skill de Claude Code + Playwright                                         |
+
+## Arrancar
+
+```bash
+pnpm install
+pnpm dev                      # con el mock en memoria (sin API): http://localhost:5173
+```
+
+Contra el API real (ver [`qa-reviewer-api`](https://github.com/kevin-martineze/qa-reviewer-api)):
+
+```bash
+# en qa-reviewer-api
+pnpm demo                     # API + Mongo en memoria + datos de demo en :3000
+# en este repo
+REVIEWS_SOURCE=api API_URL=http://localhost:3000 pnpm dev
+```
+
+Cuentas de demo (contraseña `demo1234`): `laura.rios@ejemplo.co` (admin y líder de diseño), `kevin@ejemplo.co` (developer), `andres.pena@ejemplo.co` (diseñador), `camila.torres@ejemplo.co` (lectora), `valentina.ruiz@ejemplo.co` (owner).
 
 ## Documentación
 
 Lee la arquitectura antes de escribir código:
 
+- [Requisitos del producto (PRD)](docs/product/prd.md)
 - [Visión general y flujos](docs/architecture/README.md)
 - [Dominio y manifiesto](docs/architecture/domain.md)
 - [Contrato del API](docs/architecture/api.md)
-- [Arquitectura del frontend](docs/architecture/frontend.md)
-- [Arquitectura del backend](docs/architecture/backend.md)
+- [Arquitectura del frontend](docs/architecture/frontend.md) · [layouts](docs/architecture/layouts.md) · [patrones](docs/architecture/patterns.md) · [algoritmos](docs/architecture/algorithms.md)
+- [Arquitectura del backend](https://github.com/kevin-martineze/qa-reviewer-api/tree/main/docs) (en el repo del API)
 - [Seguridad y privacidad](docs/architecture/security.md)
 - [Decisiones (ADR)](docs/adr/)
 
