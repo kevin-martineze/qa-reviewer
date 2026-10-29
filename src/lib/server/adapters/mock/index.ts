@@ -32,6 +32,7 @@ import type {
 } from '$lib/api/types';
 import { addBusinessDays, dueState } from '$lib/domain/due';
 import { PRIORITY } from '$lib/domain/labels';
+import { findMentions } from '$lib/domain/mentions';
 import { permissionsFor, visibleProjectIds, type Permission } from '$lib/domain/permissions';
 import { DEMO_PASSWORD, ORG, type InviteSeed } from './seeds';
 import { store } from './store';
@@ -137,6 +138,32 @@ export function mockGateway(locals: App.Locals): Gateways {
     const me = authorize(perm, review.data.project);
     if (!me.ok) return me;
     return ok({ me: me.data, review: review.data });
+  }
+
+  /** Comentario de una revisión que la persona ve; si no la ve, el comentario «no existe». */
+  function commentFor(id: string): Result<{ me: SessionUser; comment: Comment; review: Review }> {
+    const comment = findComment(id);
+    if (!comment.ok) return comment;
+    const found = reviewFor(comment.data.review, 'reviews:read');
+    if (!found.ok) {
+      return found.error.status === 404
+        ? err(404, 'comments.not_found', 'Comentario no encontrado.')
+        : found;
+    }
+    return ok({ me: found.data.me, comment: comment.data, review: found.data.review });
+  }
+
+  /** Mencionados que ven el proyecto: miembros activos, owner y admin. */
+  function mentionedIn(projectId: string, body: string): string[] {
+    const members = new Set(
+      store.memberships.filter((m) => m.projectId === projectId).map((m) => m.userId),
+    );
+    const people = store.users.filter(
+      (u) =>
+        u.status === 'active' &&
+        (members.has(u.id) || u.orgRole === 'owner' || u.orgRole === 'admin'),
+    );
+    return findMentions(body, people);
   }
 
   function openForFeedback(review: Review): Result<Review> {
@@ -398,8 +425,11 @@ export function mockGateway(locals: App.Locals): Gateways {
         if (review.status === 'approved' || review.status === 'changes_requested') {
           return err(409, 'reviews.already_submitted', 'Esta ronda ya se envió.');
         }
-        if (review.screens.some((s) => s.verdict === 'pending')) {
-          return err(409, 'reviews.pending_screens', 'Quedan pantallas sin veredicto.');
+        const pending = review.screens.filter((s) => s.verdict === 'pending').map((s) => s.key);
+        if (pending.length) {
+          return err(409, 'reviews.pending_screens', 'Quedan pantallas sin veredicto.', {
+            screens: pending,
+          });
         }
         const approved = review.screens.filter((s) => s.verdict === 'approved').length;
         const changes = review.screens.length - approved;
@@ -408,7 +438,15 @@ export function mockGateway(locals: App.Locals): Gateways {
         const verdicts: Record<string, Verdict> = {};
         for (const s of review.screens) verdicts[s.key] = s.verdict;
         const round = review.rounds.find((r) => r.n === review.round);
-        const submission = { by: me.id, createdAt, result, approved, changes, body } as const;
+        const message = body?.trim() || null;
+        const submission = {
+          by: me.id,
+          createdAt,
+          result,
+          approved,
+          changes,
+          body: message,
+        } as const;
         if (round) {
           round.verdicts = verdicts;
           round.submission = submission;
@@ -462,84 +500,90 @@ export function mockGateway(locals: App.Locals): Gateways {
         store.comments.push(comment);
         touch(review);
         logActivity('comment_created', me.id, review.id, `comentó en «${screen.title}»`);
-        if (me.id !== review.author) {
-          notify(review.author, 'reply', me.id, `${me.name} comentó en «${screen.title}»`, {
-            review: review.id,
-            screen: screenKey,
-            comment: comment.id,
-          });
+        const target = { review: review.id, screen: screenKey, comment: comment.id };
+        const mentioned = mentionedIn(review.project, input.body);
+        for (const id of mentioned) {
+          notify(id, 'mention', me.id, `${me.name} te mencionó en «${screen.title}»`, target);
+        }
+        if (!mentioned.includes(review.author)) {
+          notify(review.author, 'reply', me.id, `${me.name} comentó en «${screen.title}»`, target);
         }
         return ok(comment);
       },
 
       async reply(commentId: string, body: string) {
-        const comment = findComment(commentId);
-        if (!comment.ok) return comment;
-        const found = reviewFor(comment.data.review, 'comments:create');
+        const visible = commentFor(commentId);
+        if (!visible.ok) return visible;
+        const { comment } = visible.data;
+        const found = reviewFor(comment.review, 'comments:create');
         if (!found.ok) return found;
         const { me, review } = found.data;
+        const open = openForFeedback(review);
+        if (!open.ok) return open;
         const reply = { id: store.nextId('r'), author: me.id, createdAt: nowIso(), body };
-        comment.data.replies.push(reply);
+        comment.replies.push(reply);
         touch(review);
         logActivity('comment_replied', me.id, review.id, 'respondió un comentario');
-        notify(comment.data.author, 'reply', me.id, `${me.name} respondió tu comentario`, {
-          review: review.id,
-          screen: comment.data.screen,
-          comment: commentId,
-        });
+        const target = { review: review.id, screen: comment.screen, comment: commentId };
+        const mentioned = mentionedIn(review.project, body);
+        for (const id of mentioned) {
+          notify(id, 'mention', me.id, `${me.name} te mencionó en una respuesta`, target);
+        }
+        if (!mentioned.includes(comment.author)) {
+          notify(comment.author, 'reply', me.id, `${me.name} respondió tu comentario`, target);
+        }
         return ok(reply);
       },
 
       async resolveComment(commentId: string, resolved: boolean) {
-        const comment = findComment(commentId);
-        if (!comment.ok) return comment;
-        const me = session();
-        if (!me.ok) return me;
-        const review = findReview(comment.data.review);
-        if (!review.ok) return review;
-        const perms = permissionsFor(me.data, review.data.project);
-        if (comment.data.author !== me.data.id && !perms.has('comments:resolve')) {
-          return err(403, 'comments.forbidden', 'No puedes resolver este comentario.');
+        const visible = commentFor(commentId);
+        if (!visible.ok) return visible;
+        const { me, comment, review } = visible.data;
+        const perms = permissionsFor(me, review.project);
+        if (comment.author !== me.id && !perms.has('comments:resolve')) {
+          return err(403, 'comments.forbidden', 'No puedes resolver este comentario.', {
+            permission: 'comments:resolve',
+          });
         }
-        comment.data.resolved = resolved;
+        comment.resolved = resolved;
         if (resolved) {
-          logActivity('comment_resolved', me.data.id, review.data.id, 'resolvió un comentario');
+          logActivity('comment_resolved', me.id, review.id, 'resolvió un comentario');
         }
-        return ok(comment.data);
+        return ok(comment);
       },
 
       async setFollowUp(commentId: string, followUp) {
-        const comment = findComment(commentId);
-        if (!comment.ok) return comment;
-        const found = reviewFor(comment.data.review, 'verdicts:set');
+        const visible = commentFor(commentId);
+        if (!visible.ok) return visible;
+        const { comment } = visible.data;
+        const found = reviewFor(comment.review, 'verdicts:set');
         if (!found.ok) return found;
         const { me, review } = found.data;
-        if (comment.data.round >= review.round) {
+        if (comment.round >= review.round) {
           return err(409, 'comments.not_previous_round', 'El comentario es de esta ronda.');
         }
-        comment.data.followUp = followUp;
-        comment.data.resolved = followUp === 'resolved';
+        comment.followUp = followUp;
+        comment.resolved = followUp === 'resolved';
         logActivity(
           followUp === 'resolved' ? 'comment_resolved' : 'comment_replied',
           me.id,
           review.id,
           followUp === 'resolved'
-            ? `confirmó que un comentario de la ronda ${comment.data.round} quedó resuelto`
-            : `indicó que un comentario de la ronda ${comment.data.round} sigue igual`,
+            ? `confirmó que un comentario de la ronda ${comment.round} quedó resuelto`
+            : `indicó que un comentario de la ronda ${comment.round} sigue igual`,
         );
-        return ok(comment.data);
+        return ok(comment);
       },
 
       async deleteComment(commentId: string) {
-        const comment = findComment(commentId);
-        if (!comment.ok) return comment;
-        const me = session();
-        if (!me.ok) return me;
-        const review = findReview(comment.data.review);
-        if (!review.ok) return review;
-        const perms = permissionsFor(me.data, review.data.project);
-        if (comment.data.author !== me.data.id && !perms.has('comments:moderate')) {
-          return err(403, 'comments.forbidden', 'No puedes borrar este comentario.');
+        const visible = commentFor(commentId);
+        if (!visible.ok) return visible;
+        const { me, comment, review } = visible.data;
+        const perms = permissionsFor(me, review.project);
+        if (comment.author !== me.id && !perms.has('comments:moderate')) {
+          return err(403, 'comments.forbidden', 'No puedes borrar este comentario.', {
+            permission: 'comments:moderate',
+          });
         }
         store.comments = store.comments.filter((c) => c.id !== commentId);
         return ok(undefined);
