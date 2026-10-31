@@ -27,6 +27,30 @@ test.describe('organización', () => {
     await expect(page.getByText('Ya hay un usuario con ese correo.')).toBeVisible();
   });
 
+  test('crear un proyecto y entrar a configurarlo', async ({ page }) => {
+    await login(page, ADMIN, '/admin/projects');
+    await page.getByRole('button', { name: 'Nuevo proyecto' }).click();
+    await page.getByLabel('Nombre').fill('Portal de Clientes');
+    // El identificador sigue al nombre mientras no se toque.
+    await expect(page.getByLabel('Identificador')).toHaveValue('portal-de-clientes');
+    await page.getByLabel('Repositorio de GitHub (opcional)').fill('estudio-norte/portal');
+    await page.getByLabel('Clave de Plane').fill('port');
+    await page.getByRole('button', { name: 'Crear proyecto' }).click();
+    await expect(page.getByText('Proyecto Portal de Clientes creado.')).toBeVisible();
+    const row = page.getByRole('row', { name: /Portal de Clientes/ });
+    await expect(row).toContainText('PORT');
+    await row.getByRole('link', { name: 'Configurar Portal de Clientes' }).click();
+    await expect(page).toHaveURL(/\/projects\/portal-de-clientes\/settings/);
+  });
+
+  test('un identificador repetido se marca en el campo', async ({ page }) => {
+    await login(page, ADMIN, '/admin/projects');
+    await page.getByRole('button', { name: 'Nuevo proyecto' }).click();
+    await page.getByLabel('Nombre').fill('Lideris');
+    await page.getByRole('button', { name: 'Crear proyecto' }).click();
+    await expect(page.getByText('Ya hay un proyecto con ese identificador.')).toBeVisible();
+  });
+
   test('desactivar a una persona', async ({ page }) => {
     await login(page, ADMIN, '/admin/users');
     await page.getByRole('button', { name: 'Acciones para Camila Torres' }).click();
