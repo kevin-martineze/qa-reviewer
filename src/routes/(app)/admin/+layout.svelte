@@ -14,6 +14,7 @@
 
   const nav = $derived([
     { key: 'users', label: 'Usuarios', href: resolve('/admin/users') },
+    { key: 'projects', label: 'Proyectos', href: resolve('/admin/projects') },
     { key: 'roles', label: 'Roles', href: resolve('/admin/roles') },
     { key: 'audit', label: 'Auditoría', href: resolve('/admin/audit') },
   ]);

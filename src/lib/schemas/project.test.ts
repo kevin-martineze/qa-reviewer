@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { assignmentSchema, integrationsSchema, lines, slaSchema } from './project';
+import {
+  assignmentSchema,
+  integrationsSchema,
+  lines,
+  newProjectSchema,
+  slaSchema,
+  toSlug,
+} from './project';
 
 describe('lines', () => {
   it('separa por línea sin vacías ni repetidas', () => {
@@ -55,5 +62,33 @@ describe('integrationsSchema', () => {
     expect(integrationsSchema.safeParse({ ...base, checkName: 'Design Review' }).success).toBe(
       false,
     );
+  });
+});
+
+describe('toSlug', () => {
+  it('quita tildes, espacios y signos', () => {
+    expect(toSlug('  Portal de Pagos · Ñandú  ')).toBe('portal-de-pagos-nandu');
+  });
+  it('no deja guiones al final al recortar', () => {
+    expect(toSlug(`${'a'.repeat(39)} b`)).toBe('a'.repeat(39));
+  });
+});
+
+describe('newProjectSchema', () => {
+  const base = { name: 'Portal', id: 'portal', repo: '', planeKey: '' };
+  it('acepta repo y clave vacíos y normaliza mayúsculas', () => {
+    expect(newProjectSchema.parse({ ...base, id: 'Portal', planeKey: 'port' })).toEqual({
+      ...base,
+      planeKey: 'PORT',
+    });
+  });
+  it('rechaza identificadores con espacios o guiones sueltos', () => {
+    expect(newProjectSchema.safeParse({ ...base, id: 'mi portal' }).success).toBe(false);
+    expect(newProjectSchema.safeParse({ ...base, id: '-portal' }).success).toBe(false);
+    expect(newProjectSchema.safeParse({ ...base, id: 'p' }).success).toBe(false);
+  });
+  it('el repo va como dueño/repositorio', () => {
+    expect(newProjectSchema.safeParse({ ...base, repo: 'estudio-norte/web' }).success).toBe(true);
+    expect(newProjectSchema.safeParse({ ...base, repo: 'web' }).success).toBe(false);
   });
 });

@@ -25,7 +25,7 @@ Project 1───* Review 1───* Screen 1───* Capture
 ```
 
 - **Review** es el agregado raíz. Las pantallas y sus veredictos van **embebidos**, porque siempre se leen y se cambian con la revisión. Los comentarios van en su propia colección (`qa_comments`) para que el documento no crezca sin límite.
-- **Snapshots, no joins** (mismo criterio que micro-procurement): el PR (número, título, base, head, autor) y la tarjeta (clave, título) se copian en la revisión al crearla. Las notificaciones no consultan GitHub ni Plane para armar su texto.
+- **Snapshots, no joins**: el PR (número, título, base, head, autor) y la tarjeta (clave, título) se copian en la revisión al crearla. Las notificaciones no consultan GitHub ni Plane para armar su texto.
 - Número legible por proyecto: `QR-0001`, `QR-0002`… (`qa_counters`, nunca se reutiliza).
 
 ## Estados
@@ -85,14 +85,17 @@ Es el **contrato** entre la skill y el API. Va versionado (`manifestVersion`): e
   "card": { "key": "LIDER-628", "title": "Editar cantidades y eliminar ítems de la pre-orden" },
   "pr": {
     "number": 868,
-    "url": "https://github.com/pangea-soluciones/lideris-v2/pull/868",
+    "url": "https://github.com/estudio-norte/lideris-v2/pull/868",
     "title": "feat(preorders): editar en bloque las cantidades aprobadas",
     "base": "develop",
     "head": "feature/LIDER-628-pre-order-items-edit-develop",
-    "author": "kevin-martineze"
+    "author": "kevin-martineze",
+    "commit": "9f2c1e7a"
   },
   "title": "Edición en bloque de las cantidades aprobadas",
   "context": "Pre-orden · pestaña Productos / Servicios",
+  "module": "Compras",
+  "note": null,
   "summary": {
     "steps": [
       {
@@ -119,6 +122,17 @@ Es el **contrato** entre la skill y el API. Va versionado (`manifestVersion`): e
         },
         "before": null
       },
+      "elements": [
+        {
+          "name": "QuantityStepper",
+          "file": "src/lib/components/QuantityStepper.svelte",
+          "line": 42,
+          "selector": "[data-qty-stepper]",
+          "box": { "x": 0.61, "y": 0.42, "w": 0.12, "h": 0.05 }
+        }
+      ],
+      "diff": [{ "x": 0.2, "y": 0.4, "w": 0.76, "h": 0.06 }],
+      "note": null,
       "changes": ["Fila modificada: borde en color primario y «Antes: N» bajo el stepper."],
       "questions": ["¿El borde se distingue lo suficiente?"]
     }
@@ -136,7 +150,12 @@ Es el **contrato** entre la skill y el API. Va versionado (`manifestVersion`): e
 
 Reglas del manifiesto:
 
-- `screens[].key` es estable entre rondas: así el API sabe qué pantalla se recapturó y cuál heredó su veredicto.
-- `viewport` va dentro del rango objetivo del proyecto (por defecto 1024–1440 de ancho).
+- `screens[].key` es estable entre rondas: así el API sabe qué pantalla se recapturó y cuál heredó su veredicto. Una pantalla cambió si es nueva o si su `captures.after.sha256` es distinto del de la ronda anterior.
+- `module` es el nombre del módulo que se muestra en listas y métricas; si falta, el API usa el primer segmento de la ruta de la primera pantalla.
+- `note` (de la revisión) explica la ronda; `screens[].note`, lo que cambió en esa pantalla. Los dos son opcionales y se ignoran en la ronda 1.
+- `elements` son los componentes visibles con su caja en fracciones 0–1 de la captura: el visor ancla comentarios a ellos y el texto para Claude Code cita su archivo y línea. `diff` son las zonas que cambiaron respecto de la ronda anterior. Ambos son opcionales.
+- `notCaptured` acepta textos o `{ title, body }` (se guarda como «título: cuerpo»).
+- `viewport` va dentro del rango del proyecto (por defecto 1024–1920 de ancho).
 - Límites (configurables por proyecto): 40 pantallas por ronda, 5 MB por imagen, solo `image/png` y `image/webp`.
+- `pr.commit` es el SHA del head: el API publica ahí el estado del check en GitHub.
 - El API valida con su propio esquema (Joi). El frontend genera sus tipos desde el OpenAPI del API (ver [frontend.md](frontend.md)).

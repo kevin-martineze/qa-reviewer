@@ -7,6 +7,7 @@ import type {
   Gateways,
   NewComment,
   NewInvitation,
+  NewProject,
   NotificationFilters,
   ProjectPatch,
   ReviewFilters,
@@ -16,6 +17,7 @@ import type {
   ActivityType,
   AuditType,
   Comment,
+  DeviceRequest,
   InviteStatus,
   LoginResult,
   NotificationType,
@@ -29,10 +31,12 @@ import type {
   User,
   Verdict,
 } from '$lib/api/types';
-import { dueState } from '$lib/domain/due';
+import { normalizeUserCode } from '$lib/domain/device';
+import { addBusinessDays, dueState } from '$lib/domain/due';
 import { PRIORITY } from '$lib/domain/labels';
+import { findMentions } from '$lib/domain/mentions';
 import { permissionsFor, visibleProjectIds, type Permission } from '$lib/domain/permissions';
-import { DEMO_PASSWORD, ORG, type InviteSeed } from './seeds';
+import { DEMO_PASSWORD, ORG, type DeviceSeed, type InviteSeed } from './seeds';
 import { store } from './store';
 
 const TOKEN_PREFIX = 'mock.';
@@ -76,6 +80,10 @@ function nameOf(id: string): string {
   return store.users.find((u) => u.id === id)?.name ?? id;
 }
 
+function projectName(id: string): string {
+  return store.projects.find((p) => p.id === id)?.name ?? id;
+}
+
 function median(values: number[]): number {
   if (!values.length) return 0;
   const sorted = [...values].sort((a, b) => a - b);
@@ -113,7 +121,8 @@ export function mockGateway(locals: App.Locals): Gateways {
   }
 
   function findReview(id: string): Result<Review> {
-    const review = store.reviews.find((r) => r.id === id);
+    // Un borrador (la skill aún no lo publica) no existe para la web.
+    const review = store.reviews.find((r) => r.id === id && r.status !== 'draft');
     if (!review) return err(404, 'reviews.not_found', 'Esta revisión no existe o fue eliminada.');
     return ok(review);
   }
@@ -121,15 +130,98 @@ export function mockGateway(locals: App.Locals): Gateways {
   function reviewFor(id: string, perm: Permission): Result<{ me: SessionUser; review: Review }> {
     const review = findReview(id);
     if (!review.ok) return review;
-    const me = authorize(perm, review.data.project);
-    if (!me.ok) {
-      // Sin acceso de lectura al proyecto, la revisión «no existe» (no se filtra su existencia).
-      if (me.error.status === 403 && perm === 'reviews:read') {
-        return err(404, 'reviews.not_found', 'Esta revisión no existe o fue eliminada.');
-      }
-      return me;
+    // Sin acceso de lectura al proyecto, la revisión «no existe» (no se filtra su existencia).
+    const reader = authorize('reviews:read', review.data.project);
+    if (!reader.ok) {
+      return reader.error.status === 403
+        ? err(404, 'reviews.not_found', 'Esta revisión no existe o fue eliminada.')
+        : reader;
     }
+    const me = authorize(perm, review.data.project);
+    if (!me.ok) return me;
     return ok({ me: me.data, review: review.data });
+  }
+
+  /** Comentario de una revisión que la persona ve; si no la ve, el comentario «no existe». */
+  function commentFor(id: string): Result<{ me: SessionUser; comment: Comment; review: Review }> {
+    const comment = findComment(id);
+    if (!comment.ok) return comment;
+    const found = reviewFor(comment.data.review, 'reviews:read');
+    if (!found.ok) {
+      return found.error.status === 404
+        ? err(404, 'comments.not_found', 'Comentario no encontrado.')
+        : found;
+    }
+    return ok({ me: found.data.me, comment: comment.data, review: found.data.review });
+  }
+
+  /** Mencionados que ven el proyecto: miembros activos, owner y admin. */
+  function mentionedIn(projectId: string, body: string): string[] {
+    const members = new Set(
+      store.memberships.filter((m) => m.projectId === projectId).map((m) => m.userId),
+    );
+    const people = store.users.filter(
+      (u) =>
+        u.status === 'active' &&
+        (members.has(u.id) || u.orgRole === 'owner' || u.orgRole === 'admin'),
+    );
+    return findMentions(body, people);
+  }
+
+  /** Un proyecto que la persona no ve «no existe» (404), aunque exista. */
+  function seesProject(me: SessionUser, projectId: string): boolean {
+    return store.projects.some((p) => p.id === projectId) && visibleIds(me).has(projectId);
+  }
+
+  /* ── Login de la skill por navegador ─────────────────────────────── */
+
+  const DEVICE_MISS_LIMIT = 20;
+  const DEVICE_MISS_WINDOW = 10 * 60_000;
+
+  /** Busca el código; tras 20 códigos inexistentes en 10 min la persona recibe 429. */
+  function deviceFor(me: SessionUser, userCode: string): Result<DeviceSeed> {
+    const now = Date.now();
+    const misses = (store.deviceMisses.get(me.id) ?? []).filter(
+      (t) => now - t < DEVICE_MISS_WINDOW,
+    );
+    if (misses.length >= DEVICE_MISS_LIMIT) {
+      return err(429, 'device.rate_limited', 'Demasiados intentos. Espera unos minutos.');
+    }
+    const code = normalizeUserCode(userCode);
+    const found = code ? store.devices.find((d) => d.userCode === code) : undefined;
+    if (!found) {
+      store.deviceMisses.set(me.id, [...misses, now]);
+      return err(404, 'device.not_found', 'No encontramos ese código.');
+    }
+    return ok(found);
+  }
+
+  function deviceStatus(d: DeviceSeed): DeviceRequest['status'] {
+    if (d.decision !== 'pending') return d.decision;
+    return Date.parse(d.expiresAt) <= Date.now() ? 'expired' : 'pending';
+  }
+
+  /** Aprobar o rechazar solo se puede una vez y antes de que venza. */
+  function deviceOpen(d: DeviceSeed): Result<DeviceSeed> {
+    const status = deviceStatus(d);
+    if (status === 'expired') return err(410, 'device.expired', 'El código venció.');
+    if (status !== 'pending') return err(409, 'device.used', 'Este código ya se usó.');
+    return ok(d);
+  }
+
+  function deviceView(d: DeviceSeed, me: SessionUser): DeviceRequest {
+    const perms = (projectId: string) => permissionsFor(me, projectId).has('tokens:own');
+    const suggested = d.repo
+      ? store.projects.find((p) => p.repo === d.repo && seesProject(me, p.id) && perms(p.id))
+      : undefined;
+    return {
+      userCode: d.userCode,
+      status: deviceStatus(d),
+      expiresAt: d.expiresAt,
+      client: { ...d.client },
+      repo: d.repo,
+      suggestedProjectId: suggested?.id ?? null,
+    };
   }
 
   function openForFeedback(review: Review): Result<Review> {
@@ -202,7 +294,7 @@ export function mockGateway(locals: App.Locals): Gateways {
         const now = new Date();
         const q = filters.q?.trim().toLowerCase();
 
-        let items = store.reviews.filter((r) => visible.has(r.project));
+        let items = store.reviews.filter((r) => visible.has(r.project) && r.status !== 'draft');
         if (filters.status?.length) {
           const statuses = new Set(filters.status);
           items = items.filter((r) => statuses.has(r.status));
@@ -220,14 +312,19 @@ export function mockGateway(locals: App.Locals): Gateways {
         }
 
         const sort = filters.sort ?? 'updated';
+        const byUpdated = (a: Review, b: Review): number =>
+          Date.parse(b.updatedAt) - Date.parse(a.updatedAt);
         items = [...items].sort((a, b) => {
-          if (sort === 'priority') return PRIORITY[a.priority].rank - PRIORITY[b.priority].rank;
+          if (sort === 'priority') {
+            return PRIORITY[a.priority].rank - PRIORITY[b.priority].rank || byUpdated(a, b);
+          }
           if (sort === 'due') {
             const da = a.dueAt ? Date.parse(a.dueAt) : Number.POSITIVE_INFINITY;
             const db = b.dueAt ? Date.parse(b.dueAt) : Number.POSITIVE_INFINITY;
-            return da - db;
+            // Infinity - Infinity da NaN: dos sin plazo empatan.
+            return (da === db ? 0 : da - db) || byUpdated(a, b);
           }
-          return Date.parse(b.updatedAt) - Date.parse(a.updatedAt);
+          return byUpdated(a, b);
         });
 
         const limit = filters.limit ?? 20;
@@ -255,17 +352,26 @@ export function mockGateway(locals: App.Locals): Gateways {
         const found = reviewFor(id, 'reviews:assign');
         if (!found.ok) return found;
         const { me, review } = found.data;
+        if (review.status === 'closed') {
+          return err(409, 'reviews.stale_status', 'La revisión está cerrada.');
+        }
+        const active = new Set(store.users.filter((u) => u.status === 'active').map((u) => u.id));
         const allowed = new Set(
           store.memberships
             .filter(
               (m) =>
                 m.projectId === review.project &&
-                (m.role === 'designer' || m.role === 'design_lead'),
+                (m.role === 'designer' || m.role === 'design_lead') &&
+                m.userId !== review.author &&
+                active.has(m.userId),
             )
             .map((m) => m.userId),
         );
-        if (!assignees.length || assignees.some((a) => !allowed.has(a))) {
-          return err(400, 'reviews.invalid_assignees', 'Elige diseñadores del proyecto.');
+        const invalid = assignees.filter((a) => !allowed.has(a));
+        if (!assignees.length || invalid.length) {
+          return err(400, 'reviews.invalid_assignees', 'Elige diseñadores del proyecto.', {
+            userIds: invalid,
+          });
         }
         const before = new Set(review.assignees);
         for (const a of review.assignees) {
@@ -302,6 +408,9 @@ export function mockGateway(locals: App.Locals): Gateways {
       async setPriority(id: string, priority: Priority) {
         const found = reviewFor(id, 'reviews:assign');
         if (!found.ok) return found;
+        if (found.data.review.status === 'closed') {
+          return err(409, 'reviews.stale_status', 'La revisión está cerrada.');
+        }
         found.data.review.priority = priority;
         touch(found.data.review);
         return ok(found.data.review);
@@ -318,6 +427,9 @@ export function mockGateway(locals: App.Locals): Gateways {
         if (round) round.submission = null;
         review.status = 'in_review';
         review.pr.check = 'pending';
+        // Plazo nuevo desde ahora: si no, la revisión saldría vencida al instante.
+        const slaDays = store.projects.find((p) => p.id === review.project)?.slaDays ?? 2;
+        review.dueAt = addBusinessDays(new Date(), slaDays).toISOString();
         touch(review);
         logActivity('review_reopened', me.id, review.id, `anuló el envío: «${reason}»`);
         notify(review.author, 'review_submitted', me.id, `${me.name} reabrió ${review.id}`, {
@@ -371,8 +483,11 @@ export function mockGateway(locals: App.Locals): Gateways {
         if (review.status === 'approved' || review.status === 'changes_requested') {
           return err(409, 'reviews.already_submitted', 'Esta ronda ya se envió.');
         }
-        if (review.screens.some((s) => s.verdict === 'pending')) {
-          return err(409, 'reviews.pending_screens', 'Quedan pantallas sin veredicto.');
+        const pending = review.screens.filter((s) => s.verdict === 'pending').map((s) => s.key);
+        if (pending.length) {
+          return err(409, 'reviews.pending_screens', 'Quedan pantallas sin veredicto.', {
+            screens: pending,
+          });
         }
         const approved = review.screens.filter((s) => s.verdict === 'approved').length;
         const changes = review.screens.length - approved;
@@ -381,7 +496,15 @@ export function mockGateway(locals: App.Locals): Gateways {
         const verdicts: Record<string, Verdict> = {};
         for (const s of review.screens) verdicts[s.key] = s.verdict;
         const round = review.rounds.find((r) => r.n === review.round);
-        const submission = { by: me.id, createdAt, result, approved, changes, body } as const;
+        const message = body?.trim() || null;
+        const submission = {
+          by: me.id,
+          createdAt,
+          result,
+          approved,
+          changes,
+          body: message,
+        } as const;
         if (round) {
           round.verdicts = verdicts;
           round.submission = submission;
@@ -435,84 +558,90 @@ export function mockGateway(locals: App.Locals): Gateways {
         store.comments.push(comment);
         touch(review);
         logActivity('comment_created', me.id, review.id, `comentó en «${screen.title}»`);
-        if (me.id !== review.author) {
-          notify(review.author, 'reply', me.id, `${me.name} comentó en «${screen.title}»`, {
-            review: review.id,
-            screen: screenKey,
-            comment: comment.id,
-          });
+        const target = { review: review.id, screen: screenKey, comment: comment.id };
+        const mentioned = mentionedIn(review.project, input.body);
+        for (const id of mentioned) {
+          notify(id, 'mention', me.id, `${me.name} te mencionó en «${screen.title}»`, target);
+        }
+        if (!mentioned.includes(review.author)) {
+          notify(review.author, 'reply', me.id, `${me.name} comentó en «${screen.title}»`, target);
         }
         return ok(comment);
       },
 
       async reply(commentId: string, body: string) {
-        const comment = findComment(commentId);
-        if (!comment.ok) return comment;
-        const found = reviewFor(comment.data.review, 'comments:create');
+        const visible = commentFor(commentId);
+        if (!visible.ok) return visible;
+        const { comment } = visible.data;
+        const found = reviewFor(comment.review, 'comments:create');
         if (!found.ok) return found;
         const { me, review } = found.data;
+        const open = openForFeedback(review);
+        if (!open.ok) return open;
         const reply = { id: store.nextId('r'), author: me.id, createdAt: nowIso(), body };
-        comment.data.replies.push(reply);
+        comment.replies.push(reply);
         touch(review);
         logActivity('comment_replied', me.id, review.id, 'respondió un comentario');
-        notify(comment.data.author, 'reply', me.id, `${me.name} respondió tu comentario`, {
-          review: review.id,
-          screen: comment.data.screen,
-          comment: commentId,
-        });
+        const target = { review: review.id, screen: comment.screen, comment: commentId };
+        const mentioned = mentionedIn(review.project, body);
+        for (const id of mentioned) {
+          notify(id, 'mention', me.id, `${me.name} te mencionó en una respuesta`, target);
+        }
+        if (!mentioned.includes(comment.author)) {
+          notify(comment.author, 'reply', me.id, `${me.name} respondió tu comentario`, target);
+        }
         return ok(reply);
       },
 
       async resolveComment(commentId: string, resolved: boolean) {
-        const comment = findComment(commentId);
-        if (!comment.ok) return comment;
-        const me = session();
-        if (!me.ok) return me;
-        const review = findReview(comment.data.review);
-        if (!review.ok) return review;
-        const perms = permissionsFor(me.data, review.data.project);
-        if (comment.data.author !== me.data.id && !perms.has('comments:resolve')) {
-          return err(403, 'comments.forbidden', 'No puedes resolver este comentario.');
+        const visible = commentFor(commentId);
+        if (!visible.ok) return visible;
+        const { me, comment, review } = visible.data;
+        const perms = permissionsFor(me, review.project);
+        if (comment.author !== me.id && !perms.has('comments:resolve')) {
+          return err(403, 'comments.forbidden', 'No puedes resolver este comentario.', {
+            permission: 'comments:resolve',
+          });
         }
-        comment.data.resolved = resolved;
+        comment.resolved = resolved;
         if (resolved) {
-          logActivity('comment_resolved', me.data.id, review.data.id, 'resolvió un comentario');
+          logActivity('comment_resolved', me.id, review.id, 'resolvió un comentario');
         }
-        return ok(comment.data);
+        return ok(comment);
       },
 
       async setFollowUp(commentId: string, followUp) {
-        const comment = findComment(commentId);
-        if (!comment.ok) return comment;
-        const found = reviewFor(comment.data.review, 'verdicts:set');
+        const visible = commentFor(commentId);
+        if (!visible.ok) return visible;
+        const { comment } = visible.data;
+        const found = reviewFor(comment.review, 'verdicts:set');
         if (!found.ok) return found;
         const { me, review } = found.data;
-        if (comment.data.round >= review.round) {
+        if (comment.round >= review.round) {
           return err(409, 'comments.not_previous_round', 'El comentario es de esta ronda.');
         }
-        comment.data.followUp = followUp;
-        comment.data.resolved = followUp === 'resolved';
+        comment.followUp = followUp;
+        comment.resolved = followUp === 'resolved';
         logActivity(
           followUp === 'resolved' ? 'comment_resolved' : 'comment_replied',
           me.id,
           review.id,
           followUp === 'resolved'
-            ? `confirmó que un comentario de la ronda ${comment.data.round} quedó resuelto`
-            : `indicó que un comentario de la ronda ${comment.data.round} sigue igual`,
+            ? `confirmó que un comentario de la ronda ${comment.round} quedó resuelto`
+            : `indicó que un comentario de la ronda ${comment.round} sigue igual`,
         );
-        return ok(comment.data);
+        return ok(comment);
       },
 
       async deleteComment(commentId: string) {
-        const comment = findComment(commentId);
-        if (!comment.ok) return comment;
-        const me = session();
-        if (!me.ok) return me;
-        const review = findReview(comment.data.review);
-        if (!review.ok) return review;
-        const perms = permissionsFor(me.data, review.data.project);
-        if (comment.data.author !== me.data.id && !perms.has('comments:moderate')) {
-          return err(403, 'comments.forbidden', 'No puedes borrar este comentario.');
+        const visible = commentFor(commentId);
+        if (!visible.ok) return visible;
+        const { me, comment, review } = visible.data;
+        const perms = permissionsFor(me, review.project);
+        if (comment.author !== me.id && !perms.has('comments:moderate')) {
+          return err(403, 'comments.forbidden', 'No puedes borrar este comentario.', {
+            permission: 'comments:moderate',
+          });
         }
         store.comments = store.comments.filter((c) => c.id !== commentId);
         return ok(undefined);
@@ -675,6 +804,9 @@ export function mockGateway(locals: App.Locals): Gateways {
         if (!me.ok) return me;
         const user = store.users.find((u) => u.id === userId);
         if (!user) return err(404, 'users.not_found', 'Usuario no encontrado.');
+        if (user.id === me.data.id) {
+          return err(409, 'users.self', 'No puedes cambiar tu propio rol.');
+        }
         if (user.orgRole === 'owner' && me.data.orgRole !== 'owner') {
           return err(403, 'auth.forbidden', 'Solo el owner cambia el rol de otro owner.');
         }
@@ -701,8 +833,11 @@ export function mockGateway(locals: App.Locals): Gateways {
       },
 
       async invite(input: NewInvitation) {
-        const me = authorize('users:invite', null);
+        const me = authorize(input.role === 'owner' ? 'org:manage' : 'users:invite', null);
         if (!me.ok) return me;
+        if (input.projects.some((m) => !store.projects.some((p) => p.id === m.projectId))) {
+          return err(400, 'invite.invalid_projects', 'Alguno de los proyectos elegidos no existe.');
+        }
         const email = input.email.trim().toLowerCase();
         if (store.users.some((u) => u.email === email)) {
           return err(409, 'users.exists', 'Ya hay un usuario con ese correo.');
@@ -746,6 +881,36 @@ export function mockGateway(locals: App.Locals): Gateways {
         return ok(undefined);
       },
 
+      async createProject(input: NewProject) {
+        const me = authorize('projects:create', null);
+        if (!me.ok) return me;
+        const id = input.id.trim().toLowerCase();
+        if (store.projects.some((p) => p.id === id)) {
+          return err(409, 'projects.exists', 'Ya hay un proyecto con ese identificador.');
+        }
+        const repo = input.repo?.trim() ?? '';
+        const planeKey = input.planeKey?.trim() ?? '';
+        const project: Project = {
+          id,
+          name: input.name.trim(),
+          repo,
+          planeKey,
+          slaDays: 2,
+          strategy: 'manual',
+          moduleRules: [],
+          integrations: {
+            github: { connected: false, repo, checkName: 'design-review', commentOnPr: true },
+            plane: { connected: false, projectKey: planeKey, commentOnCard: true },
+          },
+          maskSelectors: [],
+          designRules: [],
+          reviewsCount: 0,
+        };
+        store.projects.push(project);
+        logAudit('project_created', me.data.id, id, `creó el proyecto ${project.name}`);
+        return ok(project);
+      },
+
       async listProjects() {
         const me = session();
         if (!me.ok) return me;
@@ -755,7 +920,8 @@ export function mockGateway(locals: App.Locals): Gateways {
             .filter((p) => visible.has(p.id))
             .map((p) => ({
               ...p,
-              reviewsCount: store.reviews.filter((r) => r.project === p.id).length,
+              reviewsCount: store.reviews.filter((r) => r.project === p.id && r.status !== 'draft')
+                .length,
             })),
         );
       },
@@ -771,6 +937,22 @@ export function mockGateway(locals: App.Locals): Gateways {
         if (!me.ok) return me;
         const project = findProject(id);
         if (!project.ok) return project;
+        if (patch.moduleRules) {
+          const members = new Set(
+            store.memberships.filter((m) => m.projectId === id).map((m) => m.userId),
+          );
+          const strangers = patch.moduleRules
+            .map((r) => r.userId)
+            .filter((userId) => !members.has(userId));
+          if (strangers.length) {
+            return err(
+              400,
+              'projects.invalid_rules',
+              'Las reglas por módulo solo pueden asignar a miembros del proyecto.',
+              { userIds: [...new Set(strangers)] },
+            );
+          }
+        }
         Object.assign(project.data, patch);
         logAudit(
           'project_updated',
@@ -783,19 +965,39 @@ export function mockGateway(locals: App.Locals): Gateways {
 
       async listMembers(projectId: string) {
         const me = authorize('reviews:read', projectId);
-        if (!me.ok) return me;
+        if (!me.ok) {
+          return me.error.status === 403
+            ? err(404, 'projects.not_found', 'Proyecto no encontrado.')
+            : me;
+        }
         return ok(store.memberships.filter((m) => m.projectId === projectId));
       },
 
       async addMember(projectId: string, userId: string, role) {
         const me = authorize('members:manage', projectId);
         if (!me.ok) return me;
+        const project = findProject(projectId);
+        if (!project.ok) return project;
+        const user = store.users.find((u) => u.id === userId);
+        if (!user) return err(404, 'users.not_found', 'Usuario no encontrado.');
+        if (user.status === 'inactive') {
+          return err(
+            409,
+            'users.inactive',
+            'La cuenta está desactivada: reactívala antes de agregarla.',
+          );
+        }
         if (store.memberships.some((m) => m.projectId === projectId && m.userId === userId)) {
           return err(409, 'members.exists', 'Ya es miembro del proyecto.');
         }
         const member = { projectId, userId, role };
         store.memberships.push(member);
-        logAudit('member_added', me.data.id, userId, `agregó a ${nameOf(userId)} al proyecto`);
+        logAudit(
+          'member_added',
+          me.data.id,
+          userId,
+          `agregó a ${user.name} a ${project.data.name}`,
+        );
         return ok(member);
       },
 
@@ -811,7 +1013,7 @@ export function mockGateway(locals: App.Locals): Gateways {
           'role_changed',
           me.data.id,
           userId,
-          `cambió el rol de ${nameOf(userId)} a ${role}`,
+          `cambió el rol de ${nameOf(userId)} en ${projectName(projectId)} a ${role}`,
         );
         return ok(member);
       },
@@ -822,10 +1024,20 @@ export function mockGateway(locals: App.Locals): Gateways {
         if (userId === me.data.id) {
           return err(409, 'members.self', 'No puedes quitarte a ti mismo.');
         }
+        if (!store.memberships.some((m) => m.projectId === projectId && m.userId === userId)) {
+          return err(404, 'members.not_found', 'No es miembro del proyecto.');
+        }
         store.memberships = store.memberships.filter(
           (m) => !(m.projectId === projectId && m.userId === userId),
         );
-        logAudit('member_removed', me.data.id, userId, `quitó a ${nameOf(userId)} del proyecto`);
+        const project = store.projects.find((p) => p.id === projectId);
+        if (project) project.moduleRules = project.moduleRules.filter((r) => r.userId !== userId);
+        logAudit(
+          'member_removed',
+          me.data.id,
+          userId,
+          `quitó a ${nameOf(userId)} de ${projectName(projectId)}`,
+        );
         return ok(undefined);
       },
 
@@ -860,6 +1072,11 @@ export function mockGateway(locals: App.Locals): Gateways {
       },
 
       async create(projectId: string, label: string) {
+        const viewer = session();
+        if (!viewer.ok) return viewer;
+        if (!seesProject(viewer.data, projectId)) {
+          return err(404, 'projects.not_found', 'Proyecto no encontrado.');
+        }
         const me = authorize('tokens:own', projectId);
         if (!me.ok) return me;
         const random = Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) =>
@@ -886,6 +1103,51 @@ export function mockGateway(locals: App.Locals): Gateways {
         if (!token) return err(404, 'tokens.not_found', 'Token no encontrado.');
         store.tokens = store.tokens.filter((t) => t.id !== id);
         logAudit('token_revoked', me.data.id, token.prefix, `revocó el token «${token.label}»`);
+        return ok(undefined);
+      },
+    },
+
+    /* ── Login de la skill por navegador ─────────────────────────────── */
+    devices: {
+      async get(userCode: string) {
+        const me = session();
+        if (!me.ok) return me;
+        const found = deviceFor(me.data, userCode);
+        if (!found.ok) return found;
+        return ok(deviceView(found.data, me.data));
+      },
+
+      async approve(userCode: string, projectId: string, label: string) {
+        const me = session();
+        if (!me.ok) return me;
+        const found = deviceFor(me.data, userCode);
+        if (!found.ok) return found;
+        const open = deviceOpen(found.data);
+        if (!open.ok) return open;
+        if (!seesProject(me.data, projectId)) {
+          return err(404, 'projects.not_found', 'Proyecto no encontrado.');
+        }
+        const allowed = authorize('tokens:own', projectId);
+        if (!allowed.ok) return allowed;
+        // El token nace cuando la skill sondea (POST /skill/device/token), no aquí:
+        // así el API nunca guarda el secreto en claro.
+        Object.assign(open.data, {
+          decision: 'approved',
+          approvedBy: me.data.id,
+          projectId,
+          label: label.trim(),
+        });
+        return ok(deviceView(open.data, me.data));
+      },
+
+      async deny(userCode: string) {
+        const me = session();
+        if (!me.ok) return me;
+        const found = deviceFor(me.data, userCode);
+        if (!found.ok) return found;
+        const open = deviceOpen(found.data);
+        if (!open.ok) return open;
+        open.data.decision = 'denied';
         return ok(undefined);
       },
     },
@@ -952,6 +1214,11 @@ export function mockGateway(locals: App.Locals): Gateways {
     /* ── Métricas ────────────────────────────────────────────────────── */
     reports: {
       async overview(filters: ReportFilters) {
+        const viewer = session();
+        if (!viewer.ok) return viewer;
+        if (filters.project && !seesProject(viewer.data, filters.project)) {
+          return err(404, 'projects.not_found', 'Proyecto no encontrado.');
+        }
         const me = authorize('reports:view', filters.project ?? null);
         if (!me.ok) return me;
         const now = new Date();
@@ -1028,7 +1295,9 @@ export function mockGateway(locals: App.Locals): Gateways {
           avgRounds: reviews.length
             ? Math.round((reviews.reduce((n, r) => n + r.round, 0) / reviews.length) * 10) / 10
             : 0,
-          pendingByDesigner: [...designers].map(([userId, row]) => ({ userId, ...row })),
+          pendingByDesigner: [...designers]
+            .map(([userId, row]) => ({ userId, ...row }))
+            .sort((a, b) => b.pending - a.pending || b.overdue - a.overdue),
           changesByModule: [...modules]
             .map(([module, row]) => ({ module, ...row }))
             .sort((a, b) => b.changes - a.changes),

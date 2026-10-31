@@ -3,7 +3,7 @@
 ## Niveles
 
 ```
-Organización (p. ej. Pangea)
+Organización
  ├── Usuarios          rol de organización: owner · admin · member
  └── Proyectos (p. ej. Lideris)
       └── Miembros     rol de proyecto: project_admin · design_lead · designer · developer · viewer
@@ -70,7 +70,7 @@ invitado ──acepta (define contraseña)──▶ activo ──desactivar─�
 
 - **Invitación** por correo con un token de un solo uso (7 días). Incluye la organización y, opcionalmente, proyectos y roles iniciales.
 - **Contraseña**: mínimo 12 caracteres, hash con Argon2id. Recuperación por correo con un token de un solo uso (1 hora).
-- **Sesión**: access token de 15 min y refresh token rotativo de 7 días. Cerrar sesión revoca el refresh. Se puede cerrar sesión en todos los dispositivos.
+- **Sesión**: token opaco con vencimiento deslizante de 7 días ([ADR 0009](../adr/0009-sesiones-opacas.md)). Cerrar sesión lo revoca; se puede cerrar sesión en todos los dispositivos, y cambiar la contraseña cierra las demás sesiones.
 - **SSO** con Google o GitHub: fase posterior; el modelo ya separa `credentials` del `user`.
 
 ## Gestión de las revisiones

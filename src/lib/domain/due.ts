@@ -33,3 +33,15 @@ export function dueState(review: Pick<Review, 'status' | 'dueAt' | 'pr'>, now: D
 export function awaitingDesign(review: Pick<Review, 'status'>): boolean {
   return review.status === 'open' || review.status === 'in_review';
 }
+
+/** Suma días hábiles (lunes a viernes, en UTC) conservando la hora. */
+export function addBusinessDays(from: Date, days: number): Date {
+  const out = new Date(from);
+  let left = days;
+  while (left > 0) {
+    out.setUTCDate(out.getUTCDate() + 1);
+    const weekday = out.getUTCDay();
+    if (weekday !== 0 && weekday !== 6) left -= 1;
+  }
+  return out;
+}
