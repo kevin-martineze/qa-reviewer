@@ -127,12 +127,12 @@ Ruta crítica: T01 → T10 → T12 → T13 → T14 → T31 → T41 → T45 → T
 **Back**, reordenada:
 
 1. T01 semilla sin Pangea: lista en `68a78cf`; falta la e2e de la web contra esa rama y la fusión.
-2. T10 login por navegador: hecho en `9fcf17e` (`feat/skill-device`); la web pasa 56/56 contra él, con el test de código vencido saltado a propósito.
-3. T12 `/skill/project` y `/skill/reviews`: hecho en `77b6fd2` (`feat/skill-lookup`).
-4. T13 `client.mjs` y la sección «API» de SKILL.md: hecho en `ca2f886` (`feat/skill-client`).
-5. T14, junto con front: hecho en `7b7d151` (`feat/skill-e2e`, `npm run e2e`), en verde contra `77b6fd2`.
+2. T10 login por navegador: hecho y en `main` (`9fcf17e`); la web pasa 56/56 contra él, con el test de código vencido saltado a propósito.
+3. T12 `/skill/project` y `/skill/reviews`: hecho y en `main` (`77b6fd2`).
+4. T13 `client.mjs` y la sección «API» de SKILL.md: hecho y en `main` (`ac8ab0a`).
+5. T14, junto con front: hecho y en `main` (`9219886`, `npm run e2e`), en verde sobre `main` (`f041473`).
 6. T20 OpenAPI con nombres. Va después de la skill para no frenarla. Los DTO nuevos de T10 y T12 ya siguen la convención de nombres, así que no habrá que renombrarlos.
-7. Después: T03, T30, T31, T34, T33, T40, T41.
+7. Después: T30, T31, T34, T33, T40, T41. (T03 hecho: el plugin y la skill están en `main` desde `f041473`.)
 
 **Front:** T02 → T11 (cuando llegue T10) → T15 → la mitad de captura de T14 → T21 (cuando llegue T20) → T32 → T43 → T44 → T48 → la parte web de T42.
 
