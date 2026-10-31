@@ -12,6 +12,7 @@ import type {
   Comment,
   CommentReply,
   CreatedToken,
+  DeviceRequest,
   ElementRef,
   FollowUp,
   Invitation,
@@ -171,6 +172,16 @@ export interface TokensGateway {
   revoke(id: string): Promise<Result<void>>;
 }
 
+/* ── Login de la skill por navegador ─────────────────────────────────── */
+
+export interface DevicesGateway {
+  /** `404 device.not_found` si el código no existe; `429 device.rate_limited` tras muchos intentos. */
+  get(userCode: string): Promise<Result<DeviceRequest>>;
+  /** Exige `tokens:own` en el proyecto. El token se crea cuando la skill lo recoge, no aquí. */
+  approve(userCode: string, projectId: string, label: string): Promise<Result<DeviceRequest>>;
+  deny(userCode: string): Promise<Result<void>>;
+}
+
 /* ── Notificaciones ──────────────────────────────────────────────────── */
 
 export interface NotificationFilters {
@@ -199,6 +210,7 @@ export interface Gateways {
   auth: AuthGateway;
   directory: DirectoryGateway;
   tokens: TokensGateway;
+  devices: DevicesGateway;
   notifications: NotificationsGateway;
   reports: ReportsGateway;
 }

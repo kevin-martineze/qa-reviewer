@@ -15,12 +15,14 @@ import {
   SEED_ACTIVITY,
   SEED_AUDIT,
   SEED_COMMENTS,
+  SEED_DEVICES,
   SEED_INVITES,
   SEED_NOTIFICATIONS,
   SEED_RECOVERIES,
   SEED_REVIEWS,
   SEED_TOKENS,
   USERS,
+  type DeviceSeed,
   type InviteSeed,
   type NotificationSeed,
   type RecoverySeed,
@@ -41,6 +43,9 @@ class MockStore {
   invites: InviteSeed[] = [];
   recoveries: RecoverySeed[] = [];
   tokens: TokenSeed[] = [];
+  devices: DeviceSeed[] = [];
+  /** Códigos inexistentes probados por persona, para el 429 de `GET /device/:userCode`. */
+  deviceMisses = new Map<string, number[]>();
   private seq = 100;
 
   constructor() {
@@ -60,6 +65,8 @@ class MockStore {
     this.invites = structuredClone(SEED_INVITES);
     this.recoveries = structuredClone(SEED_RECOVERIES);
     this.tokens = structuredClone(SEED_TOKENS);
+    this.devices = structuredClone(SEED_DEVICES);
+    this.deviceMisses = new Map();
   }
 
   nextId(prefix: string): string {

@@ -118,6 +118,18 @@ La columna «Puerto» es el método de `$lib/api/ports.ts` que lo consume; el ad
 | `POST`   | `/tokens`     | `tokens:own` en el proyecto | `tokens.create` | `{ projectId, label }` → `{ token, secret }`. El secreto se entrega **una sola vez**. |
 | `DELETE` | `/tokens/:id` | dueño                       | `tokens.revoke` | `204`.                                                                                |
 
+### Login de la skill por navegador (device flow)
+
+La skill no pide copiar un token: abre la web, la persona aprueba y la skill recibe un `qa_pat_` del proyecto ([RFC 8628](https://www.rfc-editor.org/rfc/rfc8628)). El token se crea cuando la skill sondea después de la aprobación, así el API nunca guarda el secreto en claro.
+
+| Método | Ruta                        | Permiso                     | Puerto            | Qué hace                                                                                                                                                                                                 |
+| ------ | --------------------------- | --------------------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST` | `/skill/device`             | —                           | —                 | `{ client: { name, version, hostname }, repo? }` → `{ deviceCode, userCode, verificationUri, verificationUriComplete, expiresIn: 600, interval: 5 }`. `429 device.rate_limited` (10 por minuto por IP).  |
+| `POST` | `/skill/device/token`       | —                           | —                 | `{ deviceCode }` → `{ secret, token, project, user }`, una sola vez. `400 device.pending`, `429 device.slow_down`, `403 device.denied`, `410 device.expired`, `409 device.used`, `404 device.not_found`. |
+| `GET`  | `/device/:userCode`         | sesión                      | `devices.get`     | `DeviceRequest`. El código no distingue mayúsculas y el guion es opcional. `404 device.not_found`; `429 device.rate_limited` tras 20 códigos inexistentes en 10 min.                                     |
+| `POST` | `/device/:userCode/approve` | `tokens:own` en el proyecto | `devices.approve` | `{ projectId, label }` → `DeviceRequest` con `status: approved`. `410 device.expired`, `409 device.used`, `404 projects.not_found`.                                                                      |
+| `POST` | `/device/:userCode/deny`    | sesión                      | `devices.deny`    | `204`. `410 device.expired`, `409 device.used`.                                                                                                                                                          |
+
 ### Métricas e integraciones
 
 | Método | Ruta                           | Permiso        | Puerto             | Qué hace                                                                                         |

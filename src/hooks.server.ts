@@ -5,7 +5,8 @@ import { gateway } from '$lib/server/gateway';
 import { clearSession, PROJECT_COOKIE, SESSION_COOKIE } from '$lib/server/session';
 import type { SessionUser } from '$lib/api/types';
 
-const APP_PREFIX = '/(app)';
+/** Grupos de rutas que exigen sesión: sin ella, al login con `redirectTo`. */
+const SESSION_GROUPS = ['/(app)/', '/(device)/'];
 
 function activeProject(user: SessionUser, requested: string | undefined): string | null {
   const mine = user.memberships.map((m) => m.projectId);
@@ -32,7 +33,8 @@ export const handle: Handle = async ({ event, resolve }) => {
     }
   }
 
-  if (!event.locals.user && event.route.id?.startsWith(APP_PREFIX)) {
+  const routeId = event.route.id ?? '';
+  if (!event.locals.user && SESSION_GROUPS.some((g) => `${routeId}/`.startsWith(g))) {
     const params = new URLSearchParams({ redirectTo: event.url.pathname + event.url.search });
     if (token) params.set('reason', 'expired');
     throw redirect(303, `/login?${params.toString()}`);

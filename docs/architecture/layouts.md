@@ -26,6 +26,11 @@ src/routes/
 │   ├── invite/[token]/               aceptar invitación y definir contraseña
 │   └── recover/[[token]]/            pedir enlace · definir contraseña nueva
 │
+├── (device)/                         con sesión, sin shell: una sola tarea y de vuelta a la terminal
+│   ├── +layout.server.ts             cuenta con que se entró (el guard está en hooks.server.ts)
+│   ├── +layout.svelte                AuthTemplate
+│   └── device/                       autorizar la skill (?code=ABCD-EFGH) · actions approve, deny
+│
 └── (app)/                            con sesión
     ├── +layout.server.ts             user, permisos, proyectos, personas, no leídas · depends('app:session', 'app:notifications')
     ├── +layout.svelte                AppShell
@@ -55,8 +60,8 @@ src/routes/
     │   └── members/ assignment/ sla/ integrations/ rules/
     ├── admin/                        organización
     │   ├── +layout.server.ts         guard users:invite
-    │   ├── +layout.svelte            SettingsTemplate (usuarios, roles, auditoría)
-    │   └── users/ roles/ audit/
+    │   ├── +layout.svelte            SettingsTemplate (usuarios, proyectos, roles, auditoría)
+    │   └── users/ projects/ roles/ audit/
     └── settings/                     cuenta propia
         ├── +layout.svelte            SettingsTemplate (perfil, notificaciones, tokens)
         └── profile/ notifications/ tokens/
@@ -66,6 +71,7 @@ Por qué así:
 
 - **`(detail)` separa el visor de las tabs.** `/reviews/[id]` y `/reviews/[id]/screens/[key]` comparten los datos de la revisión (`[id]/+layout.server.ts`), pero solo las tabs llevan cabecera y navegación. Ninguna condición sobre `pathname`: lo decide la carpeta.
 - **`[id]` no tiene `+layout.svelte`.** Solo comparte datos, no chrome. Un layout que solo hace `{@render children()}` sobra.
+- **`(device)` no vive en `(app)`.** Quien llega desde la terminal hace una sola cosa (autorizar la skill) y vuelve; el menú y la bandeja estorban. Pide sesión igual que `(app)`: `hooks.server.ts` protege los dos grupos.
 - **Un guard por segmento.** `admin/`, `metrics/` y `projects/[slug]/settings/` cortan en su `+layout.server.ts`; la página ni se intenta dibujar.
 
 ## Catálogo de templates
@@ -73,7 +79,7 @@ Por qué así:
 | Template            | Regiones (snippets)                                    | Props                                        | Lo usa                                          |
 | ------------------- | ------------------------------------------------------ | -------------------------------------------- | ----------------------------------------------- |
 | `AppShell`          | `sidebar(collapsed)`, `topbar`, `children`             | `crumbs`, `collapsed?`, `onToggle?`          | `(app)/+layout`                                 |
-| `AuthTemplate`      | `children`, `footer?`                                  | `title`, `description?`                      | `(public)/+layout`                              |
+| `AuthTemplate`      | `children`, `footer?`                                  | `title`, `description?`                      | `(public)/+layout`, `(device)/+layout`          |
 | `ListTemplate`      | `actions?`, `filters?`, `children`, `pagination?`      | `title`, `description?`                      | bandeja, revisiones, notificaciones             |
 | `DetailTemplate`    | `header`, `banner?`, `children`, `footer?`, `pending?` | `tabs`, `currentTab`, `loading?`             | `reviews/[id]/(detail)`                         |
 | `ViewerTemplate`    | `toolbar`, `children` (lienzo), `aside?`, `footer?`    | —                                            | `screens/[key]`                                 |

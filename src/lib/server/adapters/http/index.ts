@@ -104,6 +104,13 @@ export function httpGateway(locals: App.Locals, fetchFn?: typeof fetch): Gateway
       revoke: (id) => api.send('DELETE', `/tokens/${enc(id)}`),
     },
 
+    devices: {
+      get: (userCode) => api.request('GET', `/device/${enc(userCode)}`),
+      approve: (userCode, projectId, label) =>
+        api.request('POST', `/device/${enc(userCode)}/approve`, { projectId, label }),
+      deny: (userCode) => api.send('POST', `/device/${enc(userCode)}/deny`),
+    },
+
     notifications: {
       list: (f) =>
         api.request('GET', `/notifications${toSearch({ unread: f.unread, mentions: f.mentions })}`),

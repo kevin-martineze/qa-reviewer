@@ -17,11 +17,18 @@
 //   /recover/recover-valid-0001   válido
 //   /recover/recover-expired-0001 vencido (1 h)
 //   /recover/recover-used-0001    usado
+//
+// Códigos del login de la skill por navegador (/device?code=…):
+//   WXYZ-2345  pendiente · repo estudio-norte/lideris-v2 (sugiere Lideris)
+//   KMNP-6789  pendiente · sin repo
+//   RSTU-5678  pendiente · repo estudio-norte/auralis-admin
+//   HJKL-3456  vencido
 import type {
   ActivityEvent,
   ApiToken,
   AuditEvent,
   Comment,
+  DeviceClient,
   ElementRef,
   Membership,
   Notification,
@@ -241,6 +248,48 @@ export const SEED_RECOVERIES: RecoverySeed[] = [
   { token: 'recover-valid-0001', userId: 'u1', expiresAt: ahead(HOUR), used: false },
   { token: 'recover-expired-0001', userId: 'u2', expiresAt: ago(HOUR), used: false },
   { token: 'recover-used-0001', userId: 'u3', expiresAt: ahead(HOUR), used: true },
+];
+
+/* ── Login de la skill por navegador ─────────────────────────────────── */
+
+export interface DeviceSeed {
+  userCode: string;
+  client: DeviceClient;
+  repo: string | null;
+  createdAt: string;
+  expiresAt: string;
+  /** `approved` y `denied` no cambian. La skill recoge el token en el primer sondeo tras aprobar. */
+  decision: 'pending' | 'approved' | 'denied';
+  approvedBy: string | null;
+  projectId: string | null;
+  label: string | null;
+}
+
+function device(
+  userCode: string,
+  hostname: string,
+  repo: string | null,
+  expiresIn: number,
+): DeviceSeed {
+  return {
+    userCode,
+    client: { name: 'design-review-skill', version: '0.1.0', hostname },
+    repo,
+    createdAt: new Date(NOW + expiresIn - 10 * MIN).toISOString(),
+    expiresAt: new Date(NOW + expiresIn).toISOString(),
+    decision: 'pending',
+    approvedBy: null,
+    projectId: null,
+    label: null,
+  };
+}
+
+// Vencen en un día (no en 10 min) para que el demo y las e2e no dependan del reloj.
+export const SEED_DEVICES: DeviceSeed[] = [
+  device('WXYZ-2345', 'mbp-kevin', 'estudio-norte/lideris-v2', DAY),
+  device('KMNP-6789', 'linux-ci', null, DAY),
+  device('RSTU-5678', 'mbp-andres', 'estudio-norte/auralis-admin', DAY),
+  device('HJKL-3456', 'mbp-kevin', 'estudio-norte/lideris-v2', -HOUR),
 ];
 
 /* ── Tokens personales de la skill ───────────────────────────────────── */

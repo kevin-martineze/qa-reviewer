@@ -17,6 +17,7 @@ import type {
   ActivityType,
   AuditType,
   Comment,
+  DeviceRequest,
   InviteStatus,
   LoginResult,
   NotificationType,
@@ -30,11 +31,12 @@ import type {
   User,
   Verdict,
 } from '$lib/api/types';
+import { normalizeUserCode } from '$lib/domain/device';
 import { addBusinessDays, dueState } from '$lib/domain/due';
 import { PRIORITY } from '$lib/domain/labels';
 import { findMentions } from '$lib/domain/mentions';
 import { permissionsFor, visibleProjectIds, type Permission } from '$lib/domain/permissions';
-import { DEMO_PASSWORD, ORG, type InviteSeed } from './seeds';
+import { DEMO_PASSWORD, ORG, type DeviceSeed, type InviteSeed } from './seeds';
 import { store } from './store';
 
 const TOKEN_PREFIX = 'mock.';
@@ -169,6 +171,57 @@ export function mockGateway(locals: App.Locals): Gateways {
   /** Un proyecto que la persona no ve «no existe» (404), aunque exista. */
   function seesProject(me: SessionUser, projectId: string): boolean {
     return store.projects.some((p) => p.id === projectId) && visibleIds(me).has(projectId);
+  }
+
+  /* ── Login de la skill por navegador ─────────────────────────────── */
+
+  const DEVICE_MISS_LIMIT = 20;
+  const DEVICE_MISS_WINDOW = 10 * 60_000;
+
+  /** Busca el código; tras 20 códigos inexistentes en 10 min la persona recibe 429. */
+  function deviceFor(me: SessionUser, userCode: string): Result<DeviceSeed> {
+    const now = Date.now();
+    const misses = (store.deviceMisses.get(me.id) ?? []).filter(
+      (t) => now - t < DEVICE_MISS_WINDOW,
+    );
+    if (misses.length >= DEVICE_MISS_LIMIT) {
+      return err(429, 'device.rate_limited', 'Demasiados intentos. Espera unos minutos.');
+    }
+    const code = normalizeUserCode(userCode);
+    const found = code ? store.devices.find((d) => d.userCode === code) : undefined;
+    if (!found) {
+      store.deviceMisses.set(me.id, [...misses, now]);
+      return err(404, 'device.not_found', 'No encontramos ese código.');
+    }
+    return ok(found);
+  }
+
+  function deviceStatus(d: DeviceSeed): DeviceRequest['status'] {
+    if (d.decision !== 'pending') return d.decision;
+    return Date.parse(d.expiresAt) <= Date.now() ? 'expired' : 'pending';
+  }
+
+  /** Aprobar o rechazar solo se puede una vez y antes de que venza. */
+  function deviceOpen(d: DeviceSeed): Result<DeviceSeed> {
+    const status = deviceStatus(d);
+    if (status === 'expired') return err(410, 'device.expired', 'El código venció.');
+    if (status !== 'pending') return err(409, 'device.used', 'Este código ya se usó.');
+    return ok(d);
+  }
+
+  function deviceView(d: DeviceSeed, me: SessionUser): DeviceRequest {
+    const perms = (projectId: string) => permissionsFor(me, projectId).has('tokens:own');
+    const suggested = d.repo
+      ? store.projects.find((p) => p.repo === d.repo && seesProject(me, p.id) && perms(p.id))
+      : undefined;
+    return {
+      userCode: d.userCode,
+      status: deviceStatus(d),
+      expiresAt: d.expiresAt,
+      client: { ...d.client },
+      repo: d.repo,
+      suggestedProjectId: suggested?.id ?? null,
+    };
   }
 
   function openForFeedback(review: Review): Result<Review> {
@@ -1050,6 +1103,51 @@ export function mockGateway(locals: App.Locals): Gateways {
         if (!token) return err(404, 'tokens.not_found', 'Token no encontrado.');
         store.tokens = store.tokens.filter((t) => t.id !== id);
         logAudit('token_revoked', me.data.id, token.prefix, `revocó el token «${token.label}»`);
+        return ok(undefined);
+      },
+    },
+
+    /* ── Login de la skill por navegador ─────────────────────────────── */
+    devices: {
+      async get(userCode: string) {
+        const me = session();
+        if (!me.ok) return me;
+        const found = deviceFor(me.data, userCode);
+        if (!found.ok) return found;
+        return ok(deviceView(found.data, me.data));
+      },
+
+      async approve(userCode: string, projectId: string, label: string) {
+        const me = session();
+        if (!me.ok) return me;
+        const found = deviceFor(me.data, userCode);
+        if (!found.ok) return found;
+        const open = deviceOpen(found.data);
+        if (!open.ok) return open;
+        if (!seesProject(me.data, projectId)) {
+          return err(404, 'projects.not_found', 'Proyecto no encontrado.');
+        }
+        const allowed = authorize('tokens:own', projectId);
+        if (!allowed.ok) return allowed;
+        // El token nace cuando la skill sondea (POST /skill/device/token), no aquí:
+        // así el API nunca guarda el secreto en claro.
+        Object.assign(open.data, {
+          decision: 'approved',
+          approvedBy: me.data.id,
+          projectId,
+          label: label.trim(),
+        });
+        return ok(deviceView(open.data, me.data));
+      },
+
+      async deny(userCode: string) {
+        const me = session();
+        if (!me.ok) return me;
+        const found = deviceFor(me.data, userCode);
+        if (!found.ok) return found;
+        const open = deviceOpen(found.data);
+        if (!open.ok) return open;
+        open.data.decision = 'denied';
         return ok(undefined);
       },
     },
