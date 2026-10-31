@@ -4,26 +4,33 @@ import { DEMO_PASSWORD, login } from './helpers';
 
 const API_URL = process.env.E2E_API_URL;
 
+interface PendingDevice {
+  userCode: string;
+  /** Solo contra el API: con él la skill recoge el token. */
+  deviceCode: string | null;
+}
+
 /**
- * Código de un dispositivo pendiente. Contra el mock, uno de las semillas; contra el API,
- * uno nuevo pedido como lo hace la skill (`POST /skill/device`, público).
+ * Dispositivo pendiente. Contra el mock, uno de las semillas; contra el API, uno nuevo pedido
+ * como lo hace la skill (`POST /skill/device`, público).
  */
-async function pendingCode(
+async function pendingDevice(
   request: APIRequestContext,
   seeded: string,
   repo: string | null,
-): Promise<string> {
-  if (!API_URL) return seeded;
-  const response = await request.post(`${API_URL}/skill/device`, {
+): Promise<PendingDevice> {
+  if (!API_URL) return { userCode: seeded, deviceCode: null };
+  const response = await request.post(`${API_URL}/v1/skill/device`, {
     data: { client: { name: 'design-review-skill', version: '0.1.0', hostname: 'e2e' }, repo },
   });
   expect(response.ok()).toBeTruthy();
-  const body: { data: { userCode: string } } = await response.json();
-  return body.data.userCode;
+  const body: { data: { userCode: string; deviceCode: string } } = await response.json();
+  return body.data;
 }
 
 test('sin sesión pasa por el login y vuelve a autorizar la skill', async ({ page, request }) => {
-  const code = await pendingCode(request, 'WXYZ-2345', 'estudio-norte/lideris-v2');
+  const device = await pendingDevice(request, 'WXYZ-2345', 'estudio-norte/lideris-v2');
+  const code = device.userCode;
   await page.goto(`/device?code=${code}`);
   await expect(page).toHaveURL(/\/login\?redirectTo=/);
 
@@ -41,10 +48,25 @@ test('sin sesión pasa por el login y vuelve a autorizar la skill', async ({ pag
   await page.getByRole('button', { name: 'Autorizar' }).click();
   await expect(page.getByText('Vuelve a la terminal')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Autorizar' })).toHaveCount(0);
+
+  // Contra el API, la skill recoge el token una sola vez.
+  if (device.deviceCode) {
+    const grant = await request.post(`${API_URL}/v1/skill/device/token`, {
+      data: { deviceCode: device.deviceCode },
+    });
+    expect(grant.status()).toBe(200);
+    const body: { data: { secret: string; project: { id: string } } } = await grant.json();
+    expect(body.data.secret).toMatch(/^qa_pat_/);
+    expect(body.data.project.id).toBe('lideris');
+    const again = await request.post(`${API_URL}/v1/skill/device/token`, {
+      data: { deviceCode: device.deviceCode },
+    });
+    expect(again.status()).toBe(409);
+  }
 });
 
 test('rechazar deja el código cerrado', async ({ page, request }) => {
-  const code = await pendingCode(request, 'KMNP-6789', null);
+  const { userCode: code } = await pendingDevice(request, 'KMNP-6789', null);
   await login(page, 'kevin@ejemplo.co', `/device?code=${code.toLowerCase()}`);
   await expect(page.getByTestId('device-code')).toHaveText(code);
   await page.getByRole('button', { name: 'Rechazar' }).click();
@@ -55,7 +77,11 @@ test('rechazar deja el código cerrado', async ({ page, request }) => {
 });
 
 test('sin rol para publicar solo puede rechazar', async ({ page, request }) => {
-  const code = await pendingCode(request, 'RSTU-5678', 'estudio-norte/auralis-admin');
+  const { userCode: code } = await pendingDevice(
+    request,
+    'RSTU-5678',
+    'estudio-norte/auralis-admin',
+  );
   await login(page, 'camila.torres@ejemplo.co', `/device?code=${code}`);
   await expect(page.getByText('Solo desarrolladores y admins de proyecto')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Autorizar' })).toHaveCount(0);

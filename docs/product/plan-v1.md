@@ -127,7 +127,7 @@ Ruta crítica: T01 → T10 → T12 → T13 → T14 → T31 → T41 → T45 → T
 **Back**, reordenada:
 
 1. T01 semilla sin Pangea: lista en `68a78cf`; falta la e2e de la web contra esa rama y la fusión.
-2. T10 login por navegador. Sube un puesto porque la e2e de la web ya está lista y `client.mjs login` depende de él.
+2. T10 login por navegador: hecho en `9fcf17e` (`feat/skill-device`); la web pasa 56/56 contra él, con el test de código vencido saltado a propósito.
 3. T12 `/skill/project` y `/skill/reviews`.
 4. T13 `client.mjs` y la sección «API» de SKILL.md.
 5. T14, junto con front.
