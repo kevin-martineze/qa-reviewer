@@ -57,7 +57,7 @@ const DAY = 24 * HOUR;
 const ago = (ms: number) => new Date(NOW - ms).toISOString();
 const ahead = (ms: number) => new Date(NOW + ms).toISOString();
 
-export const ORG: Organization = { id: 'pangea', name: 'Pangea' };
+export const ORG: Organization = { id: 'estudio-norte', name: 'Estudio Norte' };
 
 /* ── Usuarios ────────────────────────────────────────────────────────── */
 
@@ -98,7 +98,7 @@ export const PROJECTS: Project[] = [
   {
     id: 'lideris',
     name: 'Lideris',
-    repo: 'pangea-soluciones/lideris-v2',
+    repo: 'estudio-norte/lideris-v2',
     planeKey: 'LIDER',
     slaDays: 2,
     strategy: 'by_module',
@@ -111,7 +111,7 @@ export const PROJECTS: Project[] = [
     integrations: {
       github: {
         connected: true,
-        repo: 'pangea-soluciones/lideris-v2',
+        repo: 'estudio-norte/lideris-v2',
         checkName: 'design-review',
         commentOnPr: true,
       },
@@ -129,7 +129,7 @@ export const PROJECTS: Project[] = [
   {
     id: 'auralis',
     name: 'Auralis',
-    repo: 'pangea-soluciones/auralis-admin',
+    repo: 'estudio-norte/auralis-admin',
     planeKey: 'AUR',
     slaDays: 3,
     strategy: 'round_robin',
@@ -137,7 +137,7 @@ export const PROJECTS: Project[] = [
     integrations: {
       github: {
         connected: true,
-        repo: 'pangea-soluciones/auralis-admin',
+        repo: 'estudio-norte/auralis-admin',
         checkName: 'design-review',
         commentOnPr: false,
       },
@@ -534,7 +534,7 @@ function pr(
   head: string,
   state: PullRequest['state'] = 'open',
   check: PullRequest['check'] = 'pending',
-  repo = 'pangea-soluciones/lideris-v2',
+  repo = 'estudio-norte/lideris-v2',
 ): PullRequest {
   return {
     number,
@@ -954,7 +954,7 @@ export const SEED_REVIEWS: Review[] = [
       'feat/AUR-88-conversations-board',
       'open',
       'pending',
-      'pangea-soluciones/auralis-admin',
+      'estudio-norte/auralis-admin',
     ),
     project: 'auralis',
     module: 'Tablero',
@@ -982,7 +982,7 @@ export const SEED_REVIEWS: Review[] = [
     title: 'Formulario de alta de clínicas',
     context: 'Auralis · configuración',
     card: 'AUR-71',
-    pr: pr(132, 'feat/AUR-71-clinic-form', 'merged', 'success', 'pangea-soluciones/auralis-admin'),
+    pr: pr(132, 'feat/AUR-71-clinic-form', 'merged', 'success', 'estudio-norte/auralis-admin'),
     project: 'auralis',
     module: 'Configuración',
     author: 'u3',

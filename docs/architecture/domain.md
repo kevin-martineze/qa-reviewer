@@ -85,7 +85,7 @@ Es el **contrato** entre la skill y el API. Va versionado (`manifestVersion`): e
   "card": { "key": "LIDER-628", "title": "Editar cantidades y eliminar ítems de la pre-orden" },
   "pr": {
     "number": 868,
-    "url": "https://github.com/pangea-soluciones/lideris-v2/pull/868",
+    "url": "https://github.com/estudio-norte/lideris-v2/pull/868",
     "title": "feat(preorders): editar en bloque las cantidades aprobadas",
     "base": "develop",
     "head": "feature/LIDER-628-pre-order-items-edit-develop",
