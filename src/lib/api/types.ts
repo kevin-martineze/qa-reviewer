@@ -41,6 +41,8 @@ export type InviteStatus = Schemas['InviteStatus'];
 export type RecoveryStatus = Schemas['RecoveryStatus'];
 export type InviteInfo = Schemas['InviteInfo'];
 export type Invitation = Schemas['Invitation'];
+/** `POST /invitations` y `POST /invitations/:id/link`: el enlace con el token se ve solo aquí. */
+export type CreatedInvitation = Schemas['CreatedInvitation'];
 export type RecoveryInfo = Schemas['RecoveryInfo'];
 
 /* ── Revisión ────────────────────────────────────────────────────────── */

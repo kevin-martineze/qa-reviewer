@@ -11,6 +11,7 @@ import type {
   AuditType,
   Comment,
   CommentReply,
+  CreatedInvitation,
   CreatedToken,
   DeviceRequest,
   ElementRef,
@@ -147,7 +148,10 @@ export interface DirectoryGateway {
   setUserStatus(userId: string, status: UserStatus): Promise<Result<User>>;
   setOrgRole(userId: string, role: OrgRole): Promise<Result<User>>;
   listInvitations(): Promise<Result<Invitation[]>>;
-  invite(input: NewInvitation): Promise<Result<Invitation>>;
+  /** Crea la invitación; `acceptUrl` lleva el token y solo se entrega aquí y al renovarla. */
+  invite(input: NewInvitation): Promise<Result<CreatedInvitation>>;
+  /** Enlace nuevo: el anterior deja de funcionar y la invitación vuelve a valer 7 días. */
+  renewInvitation(id: string): Promise<Result<CreatedInvitation>>;
   revokeInvitation(id: string): Promise<Result<void>>;
   createProject(input: NewProject): Promise<Result<Project>>;
   listProjects(): Promise<Result<Project[]>>;

@@ -64,8 +64,13 @@ export const load: PageServerLoad = async ({ locals, fetch, url }) => {
   };
 };
 
+/** El API entrega el enlace completo; el mock, solo la ruta. */
+function absolute(acceptUrl: string, url: URL): string {
+  return new URL(acceptUrl, url.origin).href;
+}
+
 export const actions: Actions = {
-  invite: async ({ request, locals, fetch }) => {
+  invite: async ({ request, locals, fetch, url }) => {
     requirePermission(locals, 'users:invite');
     const data = await request.formData();
     const api = gateway(locals, fetch).directory;
@@ -86,7 +91,21 @@ export const actions: Actions = {
         inviteEmail: raw.email,
       });
     }
-    return { invited: result.data.email, message: `Invitación enviada a ${result.data.email}.` };
+    const { invitation, acceptUrl } = result.data;
+    return {
+      inviteLink: { email: invitation.email, url: absolute(acceptUrl, url), renewed: false },
+    };
+  },
+
+  inviteLink: async ({ request, locals, fetch, url }) => {
+    requirePermission(locals, 'users:invite');
+    const id = field(await request.formData(), 'id');
+    const result = await gateway(locals, fetch).directory.renewInvitation(id);
+    if (!result.ok) return apiFail(result.error);
+    const { invitation, acceptUrl } = result.data;
+    return {
+      inviteLink: { email: invitation.email, url: absolute(acceptUrl, url), renewed: true },
+    };
   },
 
   revokeInvite: async ({ request, locals, fetch }) => {

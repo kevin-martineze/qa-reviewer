@@ -272,7 +272,7 @@ export interface paths {
     put?: never;
     /**
      * Invitar a una persona
-     * @description Envía el correo con el enlace (vence en 7 días). Invitar como owner exige `org:manage`.
+     * @description Encola el correo y devuelve el enlace (`acceptUrl`, vence en 7 días) para copiarlo: el API no lo vuelve a entregar. Invitar como owner exige `org:manage`.
      */
     post: operations['OrganizationController_invite_v1'];
     delete?: never;
@@ -293,6 +293,26 @@ export interface paths {
     post?: never;
     /** Revocar una invitación */
     delete: operations['OrganizationController_revokeInvitation_v1'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/invitations/{id}/link': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Enlace nuevo para una invitación vigente o vencida
+     * @description Rota el token (el enlace anterior deja de servir), vuelve a contar 7 días y reenvía el correo.
+     */
+    post: operations['OrganizationController_renewInvitationLink_v1'];
+    delete?: never;
     options?: never;
     head?: never;
     patch?: never;
@@ -1097,6 +1117,14 @@ export interface components {
       /** Format: date-time */
       createdAt: string;
       id: string;
+    };
+    CreatedInvitation: {
+      /**
+       * @description Enlace para aceptar; solo se entrega al crear o renovar
+       * @example https://qa-reviewer.vercel.app/invite/…
+       */
+      acceptUrl: string;
+      invitation: components['schemas']['Invitation'];
     };
     CreatedToken: {
       /**
@@ -2965,7 +2993,7 @@ export interface operations {
         };
         content: {
           'application/json': {
-            data: components['schemas']['Invitation'];
+            data: components['schemas']['CreatedInvitation'];
             /** @example ok */
             messageKey: string;
           };
@@ -3120,6 +3148,108 @@ export interface operations {
              */
             messageKey: 'invite.not_found';
             /** @example 404 */
+            statusCode: number;
+          };
+        };
+      };
+    };
+  };
+  OrganizationController_renewInvitationLink_v1: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            data: components['schemas']['CreatedInvitation'];
+            /** @example ok */
+            messageKey: string;
+          };
+        };
+      };
+      /** @description auth.required · auth.session_expired */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            details?: Record<string, never>;
+            message: string;
+            /**
+             * @example auth.required
+             * @enum {string}
+             */
+            messageKey: 'auth.required' | 'auth.session_expired';
+            /** @example 401 */
+            statusCode: number;
+          };
+        };
+      };
+      /** @description auth.forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            details?: Record<string, never>;
+            message: string;
+            /**
+             * @example auth.forbidden
+             * @enum {string}
+             */
+            messageKey: 'auth.forbidden';
+            /** @example 403 */
+            statusCode: number;
+          };
+        };
+      };
+      /** @description invite.not_found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            details?: Record<string, never>;
+            message: string;
+            /**
+             * @example invite.not_found
+             * @enum {string}
+             */
+            messageKey: 'invite.not_found';
+            /** @example 404 */
+            statusCode: number;
+          };
+        };
+      };
+      /** @description invite.closed · invite.pending */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            details?: Record<string, never>;
+            message: string;
+            /**
+             * @example invite.closed
+             * @enum {string}
+             */
+            messageKey: 'invite.closed' | 'invite.pending';
+            /** @example 409 */
             statusCode: number;
           };
         };

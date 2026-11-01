@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { X } from '@lucide/svelte';
+  import { Link, X } from '@lucide/svelte';
 
   import type { Invitation } from '$lib/api/types';
   import { Button } from '$lib/components/atoms/button';
@@ -26,6 +26,8 @@
 
   let target = $state<Invitation | null>(null);
   let open = $state(false);
+  let renewTarget = $state<Invitation | null>(null);
+  let renewOpen = $state(false);
 </script>
 
 <ul class="divide-y rounded-lg border">
@@ -47,6 +49,21 @@
         <span class="text-xs whitespace-nowrap text-muted-foreground">
           Vence el {formatShortDate(invite.expiresAt, now)}
         </span>
+      {/if}
+      {#if invite.status === 'valid' || invite.status === 'expired'}
+        <Button
+          type="button"
+          size="xs"
+          variant="ghost"
+          onclick={() => {
+            renewTarget = invite;
+            renewOpen = true;
+          }}
+        >
+          <Link /> Enlace nuevo
+        </Button>
+      {/if}
+      {#if invite.status === 'valid'}
         <Button
           type="button"
           size="xs"
@@ -62,6 +79,18 @@
     </li>
   {/each}
 </ul>
+
+<ConfirmDialog
+  bind:open={renewOpen}
+  action="?/inviteLink"
+  title="Renovar la invitación"
+  description="El enlace anterior de {renewTarget?.email} deja de funcionar y la invitación vuelve a valer 7 días."
+  confirmLabel="Crear enlace"
+>
+  {#snippet fields()}
+    <input type="hidden" name="id" value={renewTarget?.id ?? ''} />
+  {/snippet}
+</ConfirmDialog>
 
 <ConfirmDialog
   bind:open

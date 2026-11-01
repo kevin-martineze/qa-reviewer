@@ -12,6 +12,7 @@
   import SettingsSection from '$lib/components/molecules/SettingsSection.svelte';
   import InvitationsList from '$lib/components/organisms/admin/InvitationsList.svelte';
   import InviteDialog from '$lib/components/organisms/admin/InviteDialog.svelte';
+  import InviteLinkDialog from '$lib/components/organisms/admin/InviteLinkDialog.svelte';
   import UsersTable from '$lib/components/organisms/admin/UsersTable.svelte';
   import { STATUS_FILTER_LABEL, STATUS_FILTERS, usersQueryHref } from '$lib/domain/user-filters';
   import { cn } from '$lib/utils/cn';
@@ -27,10 +28,14 @@
 
   const inviteErrors = $derived<Record<string, string>>(page.form?.inviteErrors ?? {});
   const inviteEmail = $derived<string>(page.form?.inviteEmail ?? '');
+  /** Sin dominio el correo no sale: el enlace se muestra una vez para enviarlo a mano. */
+  const inviteLink = $derived(page.form?.inviteLink ?? null);
+  let linkOpen = $state(false);
 
   // Un error del server reabre el diálogo con los mensajes por campo.
   $effect(() => {
     if (page.form?.inviteErrors) inviteOpen = true;
+    if (page.form?.inviteLink) linkOpen = true;
   });
 </script>
 
@@ -115,3 +120,12 @@
   errors={inviteErrors}
   email={inviteEmail}
 />
+
+{#if inviteLink}
+  <InviteLinkDialog
+    bind:open={linkOpen}
+    email={inviteLink.email}
+    url={inviteLink.url}
+    renewed={inviteLink.renewed}
+  />
+{/if}

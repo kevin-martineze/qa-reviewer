@@ -17,7 +17,9 @@ import type {
   ActivityType,
   AuditType,
   Comment,
+  CreatedInvitation,
   DeviceRequest,
+  Invitation,
   InviteStatus,
   LoginResult,
   NotificationType,
@@ -67,6 +69,24 @@ function userByToken(token: string | undefined): User | undefined {
   if (!token?.startsWith(TOKEN_PREFIX)) return undefined;
   const id = token.slice(TOKEN_PREFIX.length);
   return store.users.find((u) => u.id === id && u.status === 'active');
+}
+
+/** El mock no conoce la URL pública de la web: el enlace va relativo y la ruta lo completa. */
+function createdInvitation(invite: InviteSeed): CreatedInvitation {
+  return { invitation: invitationView(invite), acceptUrl: `/invite/${invite.token}` };
+}
+
+function invitationView(invite: InviteSeed): Invitation {
+  return {
+    id: invite.id,
+    email: invite.email,
+    role: invite.role,
+    projects: invite.projects,
+    invitedBy: invite.inviter,
+    createdAt: invite.createdAt,
+    expiresAt: invite.expiresAt,
+    status: inviteStatus(invite),
+  };
 }
 
 function inviteStatus(invite: InviteSeed): InviteStatus {
@@ -818,18 +838,7 @@ export function mockGateway(locals: App.Locals): Gateways {
       async listInvitations() {
         const me = authorize('users:invite', null);
         if (!me.ok) return me;
-        return ok(
-          store.invites.map((i) => ({
-            id: i.id,
-            email: i.email,
-            role: i.role,
-            projects: i.projects,
-            invitedBy: i.inviter,
-            createdAt: i.createdAt,
-            expiresAt: i.expiresAt,
-            status: inviteStatus(i),
-          })),
-        );
+        return ok(store.invites.map(invitationView));
       },
 
       async invite(input: NewInvitation) {
@@ -860,16 +869,34 @@ export function mockGateway(locals: App.Locals): Gateways {
         };
         store.invites.unshift(seed);
         logAudit('user_invited', me.data.id, email, `invitó a ${email}`);
-        return ok({
-          id: seed.id,
-          email,
-          role: seed.role,
-          projects: seed.projects,
-          invitedBy: me.data.id,
-          createdAt,
-          expiresAt: seed.expiresAt,
-          status: 'valid' as const,
-        });
+        return ok(createdInvitation(seed));
+      },
+
+      async renewInvitation(id: string) {
+        const invite = store.invites.find((i) => i.id === id);
+        const me = authorize(invite?.role === 'owner' ? 'org:manage' : 'users:invite', null);
+        if (!me.ok) return me;
+        if (!invite) return err(404, 'invite.not_found', 'Invitación no encontrada.');
+        const status = inviteStatus(invite);
+        if (status === 'used' || status === 'revoked') {
+          return err(409, 'invite.closed', 'Esta invitación ya se usó o se revocó.');
+        }
+        const other = store.invites.some(
+          (i) => i.id !== invite.id && i.email === invite.email && inviteStatus(i) === 'valid',
+        );
+        if (other) {
+          return err(409, 'invite.pending', 'Ya hay una invitación vigente para ese correo.');
+        }
+        // El enlace anterior deja de funcionar: el token cambia y vuelve a valer 7 días.
+        invite.token = `invite-${store.nextId('t')}`;
+        invite.expiresAt = new Date(Date.now() + 7 * 86_400_000).toISOString();
+        logAudit(
+          'user_invited',
+          me.data.id,
+          invite.email,
+          `renovó el enlace de invitación de ${invite.email}`,
+        );
+        return ok(createdInvitation(invite));
       },
 
       async revokeInvitation(id: string) {

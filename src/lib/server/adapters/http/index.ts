@@ -79,6 +79,7 @@ export function httpGateway(locals: App.Locals, fetchFn?: typeof fetch): Gateway
       setOrgRole: (id, orgRole) => api.request('PATCH', `/users/${enc(id)}`, { orgRole }),
       listInvitations: () => api.request('GET', '/invitations'),
       invite: (input) => api.request('POST', '/invitations', input),
+      renewInvitation: (id) => api.request('POST', `/invitations/${enc(id)}/link`),
       revokeInvitation: (id) => api.send('DELETE', `/invitations/${enc(id)}`),
       createProject: (input) => api.request('POST', '/projects', input),
       listProjects: () => api.request('GET', '/projects'),

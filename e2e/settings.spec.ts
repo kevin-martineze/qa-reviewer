@@ -1,22 +1,68 @@
+import type { Page } from '@playwright/test';
+
 import { expect, test } from '@playwright/test';
 
 import { login } from './helpers';
 
 const ADMIN = 'laura.rios@ejemplo.co';
+
+/** Ruta del enlace que muestra el diálogo: el API lo arma con su URL pública de la web. */
+async function inviteLinkPath(page: Page): Promise<string> {
+  const text = (await page.getByTestId('invite-link').textContent())?.trim() ?? '';
+  return new URL(text).pathname;
+}
 const DEV = 'kevin@ejemplo.co';
 
 test.describe('organización', () => {
-  test('invitar a una persona', async ({ page }) => {
+  test('invitar a una persona', async ({ page, browser }) => {
     await login(page, ADMIN, '/admin/users');
     await page.getByRole('button', { name: 'Invitar' }).click();
     await page.getByLabel('Correo').fill('nueva.persona@ejemplo.co');
     await page.getByLabel('Rol en Lideris').click();
     await page.getByRole('option', { name: 'Diseñador' }).click();
     await page.getByRole('button', { name: 'Enviar invitación' }).click();
-    await expect(page.getByText('Invitación enviada a nueva.persona@ejemplo.co.')).toBeVisible();
+
+    // Sin dominio el correo no sale: el enlace se muestra una vez para enviarlo a mano.
+    const dialog = page.getByRole('dialog', { name: 'Invitación creada' });
+    await expect(dialog).toContainText('nueva.persona@ejemplo.co');
+    const link = await inviteLinkPath(page);
+    await dialog.getByRole('button', { name: 'Ya lo copié' }).click();
     await expect(
       page.getByRole('region', { name: 'Invitaciones' }).getByText('nueva.persona@ejemplo.co'),
     ).toBeVisible();
+
+    // El enlace abre la invitación sin sesión.
+    const guest = await browser.newPage();
+    await guest.goto(link);
+    await expect(guest.getByRole('button', { name: 'Aceptar y entrar' })).toBeVisible();
+    await guest.close();
+  });
+
+  test('un enlace nuevo reemplaza al anterior', async ({ page, browser }) => {
+    await login(page, ADMIN, '/admin/users');
+    await page.getByRole('button', { name: 'Invitar' }).click();
+    await page.getByLabel('Correo').fill('enlace.nuevo@ejemplo.co');
+    await page.getByRole('button', { name: 'Enviar invitación' }).click();
+    const first = await inviteLinkPath(page);
+    await page.getByRole('button', { name: 'Ya lo copié' }).click();
+
+    const row = page
+      .getByRole('region', { name: 'Invitaciones' })
+      .getByRole('listitem')
+      .filter({ hasText: 'enlace.nuevo@ejemplo.co' });
+    await row.getByRole('button', { name: 'Enlace nuevo' }).click();
+    await page.getByRole('button', { name: 'Crear enlace' }).click();
+    await expect(page.getByRole('dialog', { name: 'Enlace nuevo', exact: true })).toContainText(
+      'El enlace anterior ya no funciona.',
+    );
+    const second = await inviteLinkPath(page);
+    expect(second).not.toBe(first);
+
+    const guest = await browser.newPage();
+    expect((await guest.goto(first))?.status()).toBe(404);
+    await guest.goto(second);
+    await expect(guest.getByRole('button', { name: 'Aceptar y entrar' })).toBeVisible();
+    await guest.close();
   });
 
   test('un correo ya registrado se marca en el campo', async ({ page }) => {
