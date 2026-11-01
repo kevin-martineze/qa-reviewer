@@ -142,6 +142,6 @@ Ya decidido el 1 de noviembre: API y base en una instancia EC2, web en Vercel (y
 
 Falta:
 
-1. ~~Costo de AWS~~: confirmada la `t4g.small`. La parte de AWS de T45 quedó lista el 1 de noviembre: instancia, Elastic IP, buckets de capturas y backups, rol de la instancia, security group (80 y 443), alarma de recuperación y snapshots diarios. Host del API: `api.184-73-227-93.sslip.io`. Falta el rol OIDC para el deploy (T46).
+1. ~~Costo de AWS~~: confirmada la `t4g.small`. La parte de AWS de T45 quedó lista el 1 de noviembre: instancia, Elastic IP, buckets de capturas y backups, rol de la instancia, security group (80 y 443), alarma de recuperación y snapshots diarios. Host del API: `api.184-73-227-93.sslip.io`. El rol OIDC para el deploy desde `main` del API también está, y SSM ve la instancia (T46).
 2. Crear la GitHub App en su cuenta desde el manifiesto de T31.
 3. La demo pública con el mock en un proyecto aparte de Vercel (T48), para que `qa-reviewer.vercel.app` pase a producción con el API.
