@@ -20,7 +20,7 @@
 
 <div class={cn('flex items-center gap-2', className)}>
   <div class="flex h-1.5 w-16 overflow-hidden rounded-full bg-muted" role="img" aria-label={label}>
-    <!-- Ancho calculado: única forma de pintar la proporción (CLAUDE.md §4.7). -->
+    <!-- Ancho calculado: única forma de pintar la proporción (CLAUDE.md §5: style solo para valores calculados). -->
     <span class="bg-success" style:width={pct(approved)}></span>
     <span class="bg-warning" style:width={pct(changes)}></span>
   </div>

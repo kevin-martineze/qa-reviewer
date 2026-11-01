@@ -1,6 +1,6 @@
 # Contrato del API (v1)
 
-Base: `https://<host>/v1`. JSON en `camelCase`. La **fuente de verdad** es el OpenAPI que publica el API en `/docs-json`, generado desde el código como en micro-procurement. Este documento es la guía de diseño y el código manda.
+Base: `https://<host>/v1`. JSON en `camelCase`. La **fuente de verdad** es el OpenAPI que publica el API en `/docs-json`, generado desde el código. Este documento es la guía de diseño y el código manda.
 
 ## Convenciones
 
@@ -16,11 +16,11 @@ Base: `https://<host>/v1`. JSON en `camelCase`. La **fuente de verdad** es el Op
 
 ## Autenticación
 
-| Cliente                      | Mecanismo                                                                                                                                  | Alcance                                                             |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------- |
-| Skill (dev)                  | `Authorization: Bearer qa_pat_…`, token personal por proyecto                                                                              | Crear y publicar revisiones y rondas, leer el feedback de las suyas |
-| Plataforma (reviewer, autor) | Sesión: el server de SvelteKit hace login contra el API y guarda el access token en una cookie `httpOnly`. El navegador nunca ve el token. | Según rol en el proyecto                                            |
-| GitHub                       | Webhook firmado (`X-Hub-Signature-256`)                                                                                                    | `pull_request` closed/merged                                        |
+| Cliente                      | Mecanismo                                                                                                                                                                                                               | Alcance                                                             |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| Skill (dev)                  | `Authorization: Bearer qa_pat_…`, token personal por proyecto                                                                                                                                                           | Crear y publicar revisiones y rondas, leer el feedback de las suyas |
+| Plataforma (reviewer, autor) | Sesión: el server de SvelteKit hace login contra el API y guarda el token opaco (`qa_sess_…`, 7 días deslizantes, [ADR 0009](../adr/0009-sesiones-opacas.md)) en una cookie `httpOnly`. El navegador nunca ve el token. | Según rol en el proyecto                                            |
+| GitHub                       | Webhook firmado (`X-Hub-Signature-256`)                                                                                                                                                                                 | `pull_request` closed/merged                                        |
 
 Roles y permisos: ver [users-and-roles.md](users-and-roles.md). Cada endpoint de la plataforma exige el permiso de la columna «Permiso»; el front lo verifica antes (UX) y el API lo vuelve a validar.
 
@@ -39,14 +39,14 @@ La columna «Puerto» es el método de `$lib/api/ports.ts` que lo consume; el ad
 
 ### Revisiones
 
-| Método  | Ruta                     | Permiso          | Puerto                | Qué hace                                                                                                                    |
-| ------- | ------------------------ | ---------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `GET`   | `/reviews`               | `reviews:read`   | `reviews.list`        | `?status[]&project&author&assignee&priority&overdue&q&sort=updated\|due\|priority&page&limit` → `PaginatedResponse<Review>` |
-| `GET`   | `/reviews/:id`           | `reviews:read`   | `reviews.get`         | Revisión con pantallas, rondas y URLs firmadas de lectura (TTL 15 min).                                                     |
-| `GET`   | `/reviews/:id/activity`  | `reviews:read`   | `reviews.activity`    | `ActivityEvent[]`, más reciente primero.                                                                                    |
-| `PUT`   | `/reviews/:id/assignees` | `reviews:assign` | `reviews.assign`      | `{ assignees: userId[] }`. Solo diseñadores y líderes del proyecto.                                                         |
-| `PATCH` | `/reviews/:id`           | `reviews:assign` | `reviews.setPriority` | `{ priority }`.                                                                                                             |
-| `POST`  | `/reviews/:id/reopen`    | `reviews:reopen` | `reviews.reopen`      | `{ reason }`. Anula el último envío y vuelve a `in_review`; avisa al autor.                                                 |
+| Método  | Ruta                     | Permiso          | Puerto                | Qué hace                                                                                                                                                                                                   |
+| ------- | ------------------------ | ---------------- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET`   | `/reviews`               | `reviews:read`   | `reviews.list`        | `?status&project&author&assignee&priority&overdue&q&sort=updated\|due\|priority&page&limit` → `PaginatedResponse<Review>`. `status` se repite (`status=open&status=in_review`); `overdue=true` o se omite. |
+| `GET`   | `/reviews/:id`           | `reviews:read`   | `reviews.get`         | Revisión con pantallas, rondas y URLs firmadas de lectura (TTL 15 min).                                                                                                                                    |
+| `GET`   | `/reviews/:id/activity`  | `reviews:read`   | `reviews.activity`    | `ActivityEvent[]`, más reciente primero.                                                                                                                                                                   |
+| `PUT`   | `/reviews/:id/assignees` | `reviews:assign` | `reviews.assign`      | `{ assignees: userId[] }`. Solo diseñadores y líderes del proyecto.                                                                                                                                        |
+| `PATCH` | `/reviews/:id`           | `reviews:assign` | `reviews.setPriority` | `{ priority }`.                                                                                                                                                                                            |
+| `POST`  | `/reviews/:id/reopen`    | `reviews:reopen` | `reviews.reopen`      | `{ reason }`. Anula el último envío y vuelve a `in_review`; avisa al autor.                                                                                                                                |
 
 ### Feedback
 
@@ -91,23 +91,24 @@ La columna «Puerto» es el método de `$lib/api/ports.ts` que lo consume; el ad
 
 ### Organización, proyectos y miembros
 
-| Método   | Ruta                            | Permiso                                  | Puerto                       | Qué hace                                                                                                                          |
-| -------- | ------------------------------- | ---------------------------------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `GET`    | `/organization`                 | sesión                                   | `directory.organization`     | `{ id, name }`.                                                                                                                   |
-| `GET`    | `/users`                        | `users:invite`                           | `directory.listUsers`        | Usuarios de la organización.                                                                                                      |
-| `PATCH`  | `/users/:id`                    | `users:invite`                           | `directory.setUserStatus`    | `{ status }`. Desactivar revoca sus tokens. `409` sobre uno mismo o el owner.                                                     |
-| `PATCH`  | `/users/:id`                    | `users:invite` · `org:manage` para owner | `directory.setOrgRole`       | `{ orgRole }`.                                                                                                                    |
-| `GET`    | `/invitations`                  | `users:invite`                           | `directory.listInvitations`  | Con `status` calculado.                                                                                                           |
-| `POST`   | `/invitations`                  | `users:invite`                           | `directory.invite`           | `{ email, role, projects: Membership[] }`. `409` si el correo ya existe o tiene una invitación vigente. Envía el correo (7 días). |
-| `DELETE` | `/invitations/:id`              | `users:invite`                           | `directory.revokeInvitation` | `204`.                                                                                                                            |
-| `GET`    | `/projects`                     | sesión                                   | `directory.listProjects`     | Proyectos visibles (todos para owner y admin).                                                                                    |
-| `GET`    | `/projects/:id`                 | `reviews:read`                           | `directory.getProject`       | `404` si no lo ve.                                                                                                                |
-| `PATCH`  | `/projects/:id`                 | `projects:configure`                     | `directory.updateProject`    | `ProjectPatch`: `name`, `slaDays`, `strategy`, `moduleRules`, `integrations`, `maskSelectors`, `designRules`.                     |
-| `GET`    | `/projects/:id/members`         | `reviews:read`                           | `directory.listMembers`      | `ProjectMember[]`.                                                                                                                |
-| `POST`   | `/projects/:id/members`         | `members:manage`                         | `directory.addMember`        | `{ userId, role }`. `409` si ya es miembro.                                                                                       |
-| `PATCH`  | `/projects/:id/members/:userId` | `members:manage`                         | `directory.setMemberRole`    | `{ role }`.                                                                                                                       |
-| `DELETE` | `/projects/:id/members/:userId` | `members:manage`                         | `directory.removeMember`     | `409` sobre uno mismo.                                                                                                            |
-| `GET`    | `/audit`                        | `users:invite`                           | `directory.audit`            | `?type&actor&page&limit` → `PaginatedResponse<AuditEvent>`.                                                                       |
+| Método   | Ruta                            | Permiso                                  | Puerto                       | Qué hace                                                                                                                                                                                                             |
+| -------- | ------------------------------- | ---------------------------------------- | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET`    | `/organization`                 | sesión                                   | `directory.organization`     | `{ id, name }`.                                                                                                                                                                                                      |
+| `GET`    | `/users`                        | sesión                                   | `directory.listUsers`        | Usuarios de la organización (el shell los usa para mostrar nombres y avatares).                                                                                                                                      |
+| `PATCH`  | `/users/:id`                    | `users:invite`                           | `directory.setUserStatus`    | `{ status }`. Exactamente uno de `status` u `orgRole`. Desactivar cierra sus sesiones y revoca sus tokens. `409 users.self` sobre uno mismo, `409 users.owner` sobre el owner.                                       |
+| `PATCH`  | `/users/:id`                    | `users:invite` · `org:manage` para owner | `directory.setOrgRole`       | `{ orgRole }`. `409 users.self` sobre uno mismo.                                                                                                                                                                     |
+| `GET`    | `/invitations`                  | `users:invite`                           | `directory.listInvitations`  | Con `status` calculado.                                                                                                                                                                                              |
+| `POST`   | `/invitations`                  | `users:invite`                           | `directory.invite`           | `{ email, role, projects: Membership[] }`. `role: owner` exige `org:manage`. `409 users.exists` o `409 invite.pending`; `400 invite.invalid_projects` si un proyecto no existe. Envía el correo (7 días).            |
+| `DELETE` | `/invitations/:id`              | `users:invite`                           | `directory.revokeInvitation` | `204`.                                                                                                                                                                                                               |
+| `POST`   | `/projects`                     | `projects:create`                        | `directory.createProject`    | `{ id, name, repo?, planeKey? }`. `id` es el slug (minúsculas, números y guiones; no cambia). `409 projects.exists`. Audita `project_created`.                                                                       |
+| `GET`    | `/projects`                     | sesión                                   | `directory.listProjects`     | Proyectos visibles (todos para owner y admin).                                                                                                                                                                       |
+| `GET`    | `/projects/:id`                 | `reviews:read`                           | `directory.getProject`       | `404` si no lo ve.                                                                                                                                                                                                   |
+| `PATCH`  | `/projects/:id`                 | `projects:configure`                     | `directory.updateProject`    | `ProjectPatch`: `name`, `slaDays`, `strategy`, `moduleRules`, `integrations` (completo), `maskSelectors`, `designRules`. `400 projects.invalid_rules` si una regla apunta a quien no es miembro (`details.userIds`). |
+| `GET`    | `/projects/:id/members`         | `reviews:read`                           | `directory.listMembers`      | `ProjectMember[]`. `404 projects.not_found` si no lo ve.                                                                                                                                                             |
+| `POST`   | `/projects/:id/members`         | `members:manage`                         | `directory.addMember`        | `{ userId, role }`. `409 members.exists` si ya es miembro; `404 users.not_found`; `409 users.inactive` si la cuenta está desactivada.                                                                                |
+| `PATCH`  | `/projects/:id/members/:userId` | `members:manage`                         | `directory.setMemberRole`    | `{ role }`.                                                                                                                                                                                                          |
+| `DELETE` | `/projects/:id/members/:userId` | `members:manage`                         | `directory.removeMember`     | `404 members.not_found` si no es miembro; `409 members.self` sobre uno mismo. Borra sus reglas por módulo en el proyecto.                                                                                            |
+| `GET`    | `/audit`                        | `users:invite`                           | `directory.audit`            | `?type&actor&page&limit` → `PaginatedResponse<AuditEvent>`.                                                                                                                                                          |
 
 ### Tokens de la skill
 
@@ -116,6 +117,18 @@ La columna «Puerto» es el método de `$lib/api/ports.ts` que lo consume; el ad
 | `GET`    | `/tokens`     | sesión                      | `tokens.list`   | Tokens propios, solo con `prefix`.                                                    |
 | `POST`   | `/tokens`     | `tokens:own` en el proyecto | `tokens.create` | `{ projectId, label }` → `{ token, secret }`. El secreto se entrega **una sola vez**. |
 | `DELETE` | `/tokens/:id` | dueño                       | `tokens.revoke` | `204`.                                                                                |
+
+### Login de la skill por navegador (device flow)
+
+La skill no pide copiar un token: abre la web, la persona aprueba y la skill recibe un `qa_pat_` del proyecto ([RFC 8628](https://www.rfc-editor.org/rfc/rfc8628)). El token se crea cuando la skill sondea después de la aprobación, así el API nunca guarda el secreto en claro.
+
+| Método | Ruta                        | Permiso                     | Puerto            | Qué hace                                                                                                                                                                                                 |
+| ------ | --------------------------- | --------------------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST` | `/skill/device`             | —                           | —                 | `{ client: { name, version, hostname }, repo? }` → `{ deviceCode, userCode, verificationUri, verificationUriComplete, expiresIn: 600, interval: 5 }`. `429 device.rate_limited` (10 por minuto por IP).  |
+| `POST` | `/skill/device/token`       | —                           | —                 | `{ deviceCode }` → `{ secret, token, project, user }`, una sola vez. `400 device.pending`, `429 device.slow_down`, `403 device.denied`, `410 device.expired`, `409 device.used`, `404 device.not_found`. |
+| `GET`  | `/device/:userCode`         | sesión                      | `devices.get`     | `DeviceRequest`. El código no distingue mayúsculas y el guion es opcional. `404 device.not_found`; `429 device.rate_limited` tras 20 códigos inexistentes en 10 min.                                     |
+| `POST` | `/device/:userCode/approve` | `tokens:own` en el proyecto | `devices.approve` | `{ projectId, label }` → `DeviceRequest` con `status: approved`. `410 device.expired`, `409 device.used`, `404 projects.not_found`.                                                                      |
+| `POST` | `/device/:userCode/deny`    | sesión                      | `devices.deny`    | `204`. `410 device.expired`, `409 device.used`.                                                                                                                                                          |
 
 ### Métricas e integraciones
 

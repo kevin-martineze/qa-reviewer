@@ -4,14 +4,14 @@ Estado: Propuesta
 
 ## Contexto
 
-En lideris-v2, la estructura visual creció con atajos que mezclan la URL con el chrome:
+qa-reviewer tiene pantallas con chromes muy distintos: el login centrado, el shell con barra lateral, el detalle de una revisión con cabecera y pestañas, y el visor, que necesita todo el ancho. Cuando una app crece, lo fácil es decidir el chrome con condiciones dentro de un layout:
 
-- `(app)/+layout.svelte` usa `isTurner` para decidir si pinta el `AppShell`.
-- `preorders/[id]/+layout.svelte` usa `isQuoteWizardRoute` para quitar cabecera y tabs.
-- El store singleton `moduleSidebar` con `MAIN_VIEWS` registra el rail y lo oculta por ruta.
-- `DetailWithSidePanel` importa DTOs clínicos, atando el template a un dominio.
+- un `if` sobre `page.url.pathname` que quita la barra lateral en ciertas rutas;
+- una lista de rutas «especiales» que esconden la cabecera o las pestañas;
+- un store global donde cada página registra qué partes del chrome quiere;
+- templates que importan tipos del dominio y quedan atados a una sola pantalla.
 
-Estos atajos ponen condiciones sobre `pathname` y singletons de módulo en la capa visual. Cuestan de leer (qué chrome tiene cada ruta) y rompen en SSR: un singleton de módulo lo comparten las peticiones concurrentes.
+Esos atajos esconden qué chrome tiene cada ruta y fallan en SSR: un store de módulo lo comparten todas las peticiones del servidor.
 
 ## Decisión
 

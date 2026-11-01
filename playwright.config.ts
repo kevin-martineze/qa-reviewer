@@ -1,8 +1,10 @@
 import { defineConfig, devices } from '@playwright/test';
 
-// E2E contra el mock (REVIEWS_SOURCE=mock). El mock guarda estado en memoria
-// dentro del server, así que los specs corren en serie con un solo worker.
+// E2E contra el mock (REVIEWS_SOURCE=mock) o, con E2E_API_URL, contra el API real.
+// Los dos guardan estado entre specs, así que corren en serie con un solo worker.
+// Contra el API, arráncalo antes con datos de demo (`pnpm demo` en qa-reviewer-api).
 const PORT = 4317;
+const API_URL = process.env.E2E_API_URL;
 
 export default defineConfig({
   testDir: 'e2e',
@@ -31,6 +33,6 @@ export default defineConfig({
     timeout: 120_000,
     // Server nuevo en cada corrida: el mock arranca siempre con las mismas semillas.
     reuseExistingServer: false,
-    env: { REVIEWS_SOURCE: 'mock' },
+    env: API_URL ? { REVIEWS_SOURCE: 'api', API_URL } : { REVIEWS_SOURCE: 'mock' },
   },
 });

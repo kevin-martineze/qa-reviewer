@@ -331,6 +331,7 @@ export type AuditType =
   | 'member_removed'
   | 'token_created'
   | 'token_revoked'
+  | 'project_created'
   | 'project_updated';
 
 export interface AuditEvent {
@@ -358,6 +359,29 @@ export interface CreatedToken {
   token: ApiToken;
   /** Valor completo; el API no lo vuelve a entregar. */
   secret: string;
+}
+
+/* ── Login de la skill por navegador (device flow) ───────────────────── */
+
+export type DeviceStatus = 'pending' | 'approved' | 'denied' | 'expired';
+
+/** Equipo desde el que la skill pide acceso. Lo informa la skill: es texto, no prueba nada. */
+export interface DeviceClient {
+  name: string;
+  version: string;
+  hostname: string;
+}
+
+export interface DeviceRequest {
+  /** `ABCD-EFGH`, el código que la terminal muestra a la persona. */
+  userCode: string;
+  status: DeviceStatus;
+  expiresAt: string;
+  client: DeviceClient;
+  /** `owner/repo` del remoto de git donde corre la skill. */
+  repo: string | null;
+  /** Proyecto con ese repo en el que la persona puede publicar (`tokens:own`). */
+  suggestedProjectId: string | null;
 }
 
 /* ── Métricas ────────────────────────────────────────────────────────── */

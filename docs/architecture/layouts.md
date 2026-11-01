@@ -26,6 +26,11 @@ src/routes/
 │   ├── invite/[token]/               aceptar invitación y definir contraseña
 │   └── recover/[[token]]/            pedir enlace · definir contraseña nueva
 │
+├── (device)/                         con sesión, sin shell: una sola tarea y de vuelta a la terminal
+│   ├── +layout.server.ts             cuenta con que se entró (el guard está en hooks.server.ts)
+│   ├── +layout.svelte                AuthTemplate
+│   └── device/                       autorizar la skill (?code=ABCD-EFGH) · actions approve, deny
+│
 └── (app)/                            con sesión
     ├── +layout.server.ts             user, permisos, proyectos, personas, no leídas · depends('app:session', 'app:notifications')
     ├── +layout.svelte                AppShell
@@ -55,8 +60,8 @@ src/routes/
     │   └── members/ assignment/ sla/ integrations/ rules/
     ├── admin/                        organización
     │   ├── +layout.server.ts         guard users:invite
-    │   ├── +layout.svelte            SettingsTemplate (usuarios, roles, auditoría)
-    │   └── users/ roles/ audit/
+    │   ├── +layout.svelte            SettingsTemplate (usuarios, proyectos, roles, auditoría)
+    │   └── users/ projects/ roles/ audit/
     └── settings/                     cuenta propia
         ├── +layout.svelte            SettingsTemplate (perfil, notificaciones, tokens)
         └── profile/ notifications/ tokens/
@@ -66,6 +71,7 @@ Por qué así:
 
 - **`(detail)` separa el visor de las tabs.** `/reviews/[id]` y `/reviews/[id]/screens/[key]` comparten los datos de la revisión (`[id]/+layout.server.ts`), pero solo las tabs llevan cabecera y navegación. Ninguna condición sobre `pathname`: lo decide la carpeta.
 - **`[id]` no tiene `+layout.svelte`.** Solo comparte datos, no chrome. Un layout que solo hace `{@render children()}` sobra.
+- **`(device)` no vive en `(app)`.** Quien llega desde la terminal hace una sola cosa (autorizar la skill) y vuelve; el menú y la bandeja estorban. Pide sesión igual que `(app)`: `hooks.server.ts` protege los dos grupos.
 - **Un guard por segmento.** `admin/`, `metrics/` y `projects/[slug]/settings/` cortan en su `+layout.server.ts`; la página ni se intenta dibujar.
 
 ## Catálogo de templates
@@ -73,7 +79,7 @@ Por qué así:
 | Template            | Regiones (snippets)                                    | Props                                        | Lo usa                                          |
 | ------------------- | ------------------------------------------------------ | -------------------------------------------- | ----------------------------------------------- |
 | `AppShell`          | `sidebar(collapsed)`, `topbar`, `children`             | `crumbs`, `collapsed?`, `onToggle?`          | `(app)/+layout`                                 |
-| `AuthTemplate`      | `children`, `footer?`                                  | `title`, `description?`                      | `(public)/+layout`                              |
+| `AuthTemplate`      | `children`, `footer?`                                  | `title`, `description?`                      | `(public)/+layout`, `(device)/+layout`          |
 | `ListTemplate`      | `actions?`, `filters?`, `children`, `pagination?`      | `title`, `description?`                      | bandeja, revisiones, notificaciones             |
 | `DetailTemplate`    | `header`, `banner?`, `children`, `footer?`, `pending?` | `tabs`, `currentTab`, `loading?`             | `reviews/[id]/(detail)`                         |
 | `ViewerTemplate`    | `toolbar`, `children` (lienzo), `aside?`, `footer?`    | —                                            | `screens/[key]`                                 |
@@ -266,19 +272,15 @@ Un `+error.svelte` se dibuja **dentro** de los layouts superiores al segmento qu
 - Errores por campo van aparte (`{ errors }`, `{ inviteErrors }`…) y se pintan junto al campo con `FormField`, no en un toast. Si el form vive en un diálogo, la página lo reabre cuando llegan errores.
 - Confirmaciones destructivas: `ConfirmDialog` (molecule) con los inputs ocultos como snippet `fields`.
 
-## Lo que no copiamos de lideris-v2
+## Atajos que evitamos
 
-lideris-v2 creció rápido y tiene atajos que aquí se evitan desde el principio:
-
-| En lideris-v2                                                                                             | Problema                                      | En qa-reviewer                                  |
-| --------------------------------------------------------------------------------------------------------- | --------------------------------------------- | ----------------------------------------------- |
-| `(app)/+layout.svelte`: `isTurner` decide si se pinta el `AppShell`                                       | El chrome depende de un `if` sobre la URL     | Grupo propio con su layout (regla 1)            |
-| `preorders/[id]/+layout.svelte`: `isQuoteWizardRoute` quita cabecera y tabs                               | Igual: condición sobre `pathname`             | Grupo `(detail)` (regla 1)                      |
-| `(purchases)/+layout.svelte`: el store `moduleSidebar` registra el rail y `MAIN_VIEWS` lo oculta por ruta | Singleton de módulo más lista de rutas a mano | El layout pasa el snippet al template (regla 4) |
-| `DetailWithSidePanel.svelte` importa DTOs clínicos                                                        | El template queda atado a un dominio          | Template puro (regla 2)                         |
-| Cabecera y tabs escritas dentro de `+layout.svelte`                                                       | El markup se duplica entre detalles           | `DetailTemplate` reutilizable (regla 3)         |
-
-Lo que sí se copia: `PageLayout` y `ListTemplate` con regiones como snippets, el skeleton al cambiar de tab y los grupos `(app)`/`(auth)`.
+| Atajo                                                               | Problema                                         | En qa-reviewer                                  |
+| ------------------------------------------------------------------- | ------------------------------------------------ | ----------------------------------------------- |
+| Un `if` sobre `pathname` en el layout decide si hay shell           | El chrome depende de una condición escondida     | Grupo propio con su layout (regla 1)            |
+| Una lista de rutas que quitan cabecera o pestañas                   | Lo mismo, y la lista se desactualiza             | Grupo `(detail)` (regla 1)                      |
+| Un store global donde cada página registra su menú lateral          | Estado de módulo compartido entre peticiones SSR | El layout pasa el snippet al template (regla 4) |
+| Un template que importa tipos del dominio                           | El template solo sirve para una pantalla         | Template puro (regla 2)                         |
+| Cabecera y pestañas escritas a mano dentro de cada `+layout.svelte` | El markup se duplica entre detalles              | `DetailTemplate` reutilizable (regla 3)         |
 
 ## Pruebas
 

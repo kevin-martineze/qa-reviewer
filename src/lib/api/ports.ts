@@ -12,6 +12,7 @@ import type {
   Comment,
   CommentReply,
   CreatedToken,
+  DeviceRequest,
   ElementRef,
   FollowUp,
   Invitation,
@@ -119,6 +120,14 @@ export interface AuditFilters {
   limit?: number;
 }
 
+/** `POST /projects`. `id` es el slug: minúsculas, números y guiones; no cambia. */
+export interface NewProject {
+  id: string;
+  name: string;
+  repo?: string;
+  planeKey?: string;
+}
+
 export type ProjectPatch = Partial<
   Pick<
     Project,
@@ -140,6 +149,7 @@ export interface DirectoryGateway {
   listInvitations(): Promise<Result<Invitation[]>>;
   invite(input: NewInvitation): Promise<Result<Invitation>>;
   revokeInvitation(id: string): Promise<Result<void>>;
+  createProject(input: NewProject): Promise<Result<Project>>;
   listProjects(): Promise<Result<Project[]>>;
   getProject(id: string): Promise<Result<Project>>;
   updateProject(id: string, patch: ProjectPatch): Promise<Result<Project>>;
@@ -160,6 +170,16 @@ export interface TokensGateway {
   list(): Promise<Result<ApiToken[]>>;
   create(projectId: string, label: string): Promise<Result<CreatedToken>>;
   revoke(id: string): Promise<Result<void>>;
+}
+
+/* ── Login de la skill por navegador ─────────────────────────────────── */
+
+export interface DevicesGateway {
+  /** `404 device.not_found` si el código no existe; `429 device.rate_limited` tras muchos intentos. */
+  get(userCode: string): Promise<Result<DeviceRequest>>;
+  /** Exige `tokens:own` en el proyecto. El token se crea cuando la skill lo recoge, no aquí. */
+  approve(userCode: string, projectId: string, label: string): Promise<Result<DeviceRequest>>;
+  deny(userCode: string): Promise<Result<void>>;
 }
 
 /* ── Notificaciones ──────────────────────────────────────────────────── */
@@ -190,6 +210,7 @@ export interface Gateways {
   auth: AuthGateway;
   directory: DirectoryGateway;
   tokens: TokensGateway;
+  devices: DevicesGateway;
   notifications: NotificationsGateway;
   reports: ReportsGateway;
 }

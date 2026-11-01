@@ -18,7 +18,8 @@ Las capturas salen de aplicaciones reales (Lideris maneja datos clínicos). El m
 ## Autenticación y tokens
 
 - **Tokens de la skill**: personales, por proyecto y revocables. Se guarda solo el hash SHA-256, el valor se muestra una vez y se registra `lastUsedAt`. En la máquina del dev viven en una variable de entorno (`QA_REVIEWER_TOKEN`), **nunca dentro de la skill ni del repo**.
-- **Sesión de la plataforma**: access token corto (15 min) y refresh token (7 días) en cookies `httpOnly`, `Secure` y `SameSite=Lax`, manejadas solo por el server de SvelteKit.
+- **Sesión de la plataforma**: token opaco (`qa_sess_…`) con vencimiento deslizante de 7 días; el API guarda solo su hash. Vive en una cookie `httpOnly`, `Secure` y `SameSite=Lax` que maneja solo el server de SvelteKit. Desactivar a una persona revoca sus sesiones y tokens al instante.
+- **Contraseñas**: Argon2id; el login tarda lo mismo exista o no el correo.
 - **Webhook de GitHub**: se verifica `X-Hub-Signature-256`.
 - **Autorización**: por rol de proyecto en cada endpoint. Un reviewer de un proyecto no ve revisiones de otro.
 

@@ -1,4 +1,4 @@
-// Filtros del listado de revisiones en la URL (CLAUDE.md regla 16).
+// Filtros del listado de revisiones en la URL (CLAUDE.md §1: lo que se ve está en la URL).
 // Una sola fuente: el server parsea con `parseReviewQuery` y la UI arma los
 // enlaces con `reviewQueryHref`, así back/forward, refresh y compartir funcionan.
 import type { ReviewFilters, ReviewSort } from '$lib/api/ports';

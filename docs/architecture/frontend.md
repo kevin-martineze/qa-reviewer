@@ -1,6 +1,6 @@
 # Arquitectura del frontend
 
-Stack: **SvelteKit 2 + Svelte 5 (runes) + TypeScript strict + Tailwind v4 + shadcn-svelte**, con las mismas reglas duras que `lideris-v2` (su `CLAUDE.md` es la referencia). Este documento fija lo propio de qa-reviewer. La estructura visual (layout de ruta, templates, guards y errores por segmento) está en [layouts.md](layouts.md).
+Stack: **SvelteKit 2 + Svelte 5 (runes) + TypeScript strict + Tailwind v4 + shadcn-svelte**. Las reglas de código están en el [`CLAUDE.md`](../../CLAUDE.md); este documento explica la arquitectura. La estructura visual (layout de ruta, templates, guards y errores por segmento) está en [layouts.md](layouts.md).
 
 ## Principios
 

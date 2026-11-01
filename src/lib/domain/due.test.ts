@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { PullRequest } from '$lib/api/types';
-import { awaitingDesign, dueState } from './due';
+import { addBusinessDays, awaitingDesign, dueState } from './due';
 
 const now = new Date('2026-10-25T20:00:00Z');
 const pr: PullRequest = {
@@ -44,5 +44,25 @@ describe('awaitingDesign', () => {
     expect(awaitingDesign({ status: 'open' })).toBe(true);
     expect(awaitingDesign({ status: 'in_review' })).toBe(true);
     expect(awaitingDesign({ status: 'changes_requested' })).toBe(false);
+  });
+});
+
+describe('addBusinessDays', () => {
+  it('salta el fin de semana y conserva la hora', () => {
+    // Viernes 30 oct 2026, 15:00 UTC + 2 hábiles = martes 3 nov.
+    expect(addBusinessDays(new Date('2026-10-30T15:00:00Z'), 2).toISOString()).toBe(
+      '2026-11-03T15:00:00.000Z',
+    );
+  });
+
+  it('desde un sábado cuenta desde el lunes', () => {
+    expect(addBusinessDays(new Date('2026-10-31T09:00:00Z'), 1).toISOString()).toBe(
+      '2026-11-02T09:00:00.000Z',
+    );
+  });
+
+  it('cero días no mueve la fecha', () => {
+    const from = new Date('2026-10-28T12:00:00Z');
+    expect(addBusinessDays(from, 0).getTime()).toBe(from.getTime());
   });
 });

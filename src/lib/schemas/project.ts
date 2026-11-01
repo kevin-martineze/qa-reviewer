@@ -65,3 +65,38 @@ export const rulesSchema = z.object({
     .array(z.string().max(120, 'Cada selector tiene máximo 120 caracteres.'))
     .max(30, 'Máximo 30 selectores.'),
 });
+
+/** Slug sugerido a partir del nombre: minúsculas sin tildes, números y guiones. */
+export function toSlug(name: string): string {
+  return name
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40)
+    .replace(/-+$/, '');
+}
+
+/** `POST /projects`. El identificador no cambia después: el API lo usa en URLs y tokens. */
+export const newProjectSchema = z.object({
+  name: z.string().trim().min(1, 'Escribe el nombre.').max(80, 'Máximo 80 caracteres.'),
+  id: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .min(2, 'Mínimo 2 caracteres.')
+    .max(40, 'Máximo 40 caracteres.')
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Solo minúsculas, números y guiones entre palabras.'),
+  repo: z
+    .string()
+    .trim()
+    .max(200, 'Máximo 200 caracteres.')
+    .regex(/^$|^[\w.-]+\/[\w.-]+$/, 'Escribe dueño/repositorio, por ejemplo estudio-norte/web.'),
+  planeKey: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .max(20, 'Máximo 20 caracteres.')
+    .regex(/^[A-Z0-9]*$/, 'Solo letras y números, por ejemplo LIDER.'),
+});
