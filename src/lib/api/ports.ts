@@ -7,7 +7,7 @@ import type {
   ActivityEvent,
   Anchor,
   ApiToken,
-  AuditEvent,
+  AuditPage,
   AuditType,
   Comment,
   CommentReply,
@@ -23,7 +23,6 @@ import type {
   NotificationPrefs,
   Organization,
   OrgRole,
-  PaginatedResponse,
   Priority,
   ProfileInput,
   Project,
@@ -33,6 +32,7 @@ import type {
   ReportFilters,
   ReportsOverview,
   Review,
+  ReviewPage,
   ReviewStatus,
   SessionUser,
   User,
@@ -58,7 +58,7 @@ export interface ReviewFilters {
 }
 
 export interface ReviewsGateway {
-  list(filters: ReviewFilters): Promise<Result<PaginatedResponse<Review>>>;
+  list(filters: ReviewFilters): Promise<Result<ReviewPage>>;
   get(id: string): Promise<Result<Review>>;
   activity(id: string): Promise<Result<ActivityEvent[]>>;
   assign(id: string, assignees: string[]): Promise<Result<Review>>;
@@ -161,7 +161,7 @@ export interface DirectoryGateway {
     role: ProjectRole,
   ): Promise<Result<ProjectMember>>;
   removeMember(projectId: string, userId: string): Promise<Result<void>>;
-  audit(filters: AuditFilters): Promise<Result<PaginatedResponse<AuditEvent>>>;
+  audit(filters: AuditFilters): Promise<Result<AuditPage>>;
 }
 
 /* ── Tokens personales de la skill ───────────────────────────────────── */

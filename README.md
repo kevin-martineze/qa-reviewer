@@ -139,7 +139,7 @@ scripts/                    anonimizado de capturas, export de la semilla, captu
 | 2    | API: sesión, cuenta, invitaciones, recuperación, storage, correo, outbox                 | Hecho     |
 | 3    | API: semilla de demo compartida con el mock                                              | Hecho     |
 | 4    | API: organización, proyectos, revisiones, feedback, notificaciones, tokens, métricas     | Hecho     |
-| 5    | E2E de la web también contra el API real; tipos generados desde OpenAPI                  | En curso  |
+| 5    | E2E de la web también contra el API real; tipos generados desde OpenAPI                  | Hecho     |
 | 6    | Skill `/design-review`: captura, enmascarado, manifiesto, rondas y `status`              | Pendiente |
 | 7    | Integraciones: comentario y check en GitHub, comentario en Plane, correo; jobs de plazos | Pendiente |
 | 8    | CI en ambos repos y despliegue (web en Vercel, API con Mongo y S3)                       | Pendiente |

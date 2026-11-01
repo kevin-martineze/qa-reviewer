@@ -26,7 +26,8 @@ $lib/server/       gateway.ts         elige el adaptador (REVIEWS_SOURCE=mock|ap
    │               adapters/mock/*    store en memoria con las mismas reglas del API
    ▼  implementan
 $lib/api/          ports.ts    Reviews, Feedback, Auth, Directory, Tokens, Notifications, Reports
-                   types.ts    tipos del contrato (generados desde OpenAPI cuando exista)
+                   types.ts    nombres de los tipos del contrato (reexporta generated/)
+                   generated/  openapi.json del API y schema.ts generado (pnpm types:sync)
                    result.ts   Result<T>, ok, err
 $lib/domain/       funciones puras: permisos, habilidades sobre una revisión, plazos, progreso,
                    veredictos, anclas, texto para Claude Code y las queries de cada URL
@@ -126,8 +127,9 @@ El árbol de rutas está en [layouts.md](layouts.md#árbol-de-rutas).
 
 ## Contrato de tipos
 
-- Mientras no exista el API, `$lib/api/types.ts` refleja [api.md](api.md) a mano y el mock lo cumple.
-- Cuando el API publique `/docs-json`, los tipos se generan con `openapi-typescript` en `$lib/api/generated/` (script `pnpm gen:api`) y `types.ts` solo los reexporta. Prohibido duplicar tipos del contrato a mano después de eso.
+- `$lib/api/generated/openapi.json` es una copia del `openapi.json` versionado en `main` del API. `pnpm types:sync` la actualiza y regenera `schema.ts` con `openapi-typescript`. `pnpm types` regenera desde la copia, y `pnpm types:check` (CI) falla si no coinciden.
+- `types.ts` solo reexporta los schemas con su nombre (`Review`, `ReviewPage`…). Prohibido duplicar tipos del contrato a mano. Si falta un campo, se agrega en el API y se sincroniza.
+- El mock cumple esos mismos tipos: si el contrato cambia, `pnpm check` señala lo que el mock tiene que ajustar.
 
 ## Capturas del mock
 

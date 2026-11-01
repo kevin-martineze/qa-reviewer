@@ -22,7 +22,10 @@
     "test:e2e:api": "E2E_API_URL=${E2E_API_URL:-http://localhost:3000} playwright test",
     "prepare": "husky",
     "readme:shots": "playwright test -c scripts/readme/playwright.config.ts",
-    "seed:export": "node scripts/export-demo-seed.mjs"
+    "seed:export": "node scripts/export-demo-seed.mjs",
+    "types": "node scripts/openapi-types.mjs",
+    "types:sync": "node scripts/openapi-types.mjs sync",
+    "types:check": "node scripts/openapi-types.mjs check"
   },
   "devDependencies": {
     "@eslint/js": "^9.18.0",
@@ -42,6 +45,7 @@
     "happy-dom": "^21.0.4",
     "husky": "^9.1.7",
     "lint-staged": "^15.4.0",
+    "openapi-typescript": "^7.13.0",
     "prettier": "^3.4.2",
     "prettier-plugin-svelte": "^3.3.3",
     "svelte": "^5.0.0",

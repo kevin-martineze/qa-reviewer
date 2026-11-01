@@ -80,7 +80,7 @@ Antes de crear una ruta, un template o algo de navegación, lee [`layouts.md`](d
 
 ## 10. Datos del API y del mock
 
-- `$lib/api/types.ts` es el contrato; `ports.ts`, las operaciones. Cuando el API publique su OpenAPI, los tipos se generan y no se escriben a mano.
+- El contrato es el `openapi.json` del API, copiado en `$lib/api/generated/` junto con los tipos que salen de él (`pnpm types:sync`). `$lib/api/types.ts` solo les pone nombre y `ports.ts` define las operaciones. Los tipos del contrato no se escriben a mano, y `pnpm types:check` falla si la copia y los tipos no coinciden.
 - `$lib/server/adapters/mock/` es un API en memoria con las mismas reglas que el real: permisos por proyecto, 403/404/409/410 y que el autor no pueda dar veredicto a su propio trabajo. Se reinicia con el servidor.
 - `REVIEWS_SOURCE=api` y `API_URL` cambian al API real sin tocar rutas ni componentes.
 

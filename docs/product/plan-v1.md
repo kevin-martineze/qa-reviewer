@@ -131,10 +131,10 @@ Ruta crítica: T01 → T10 → T12 → T13 → T14 → T31 → T41 → T45 → T
 3. T12 `/skill/project` y `/skill/reviews`: hecho y en `main` (`77b6fd2`).
 4. T13 `client.mjs` y la sección «API» de SKILL.md: hecho y en `main` (`ac8ab0a`).
 5. T14, junto con front: hecho y en `main` (`9219886`, `npm run e2e`), en verde sobre `main` (`f041473`).
-6. T20 OpenAPI con nombres. Va después de la skill para no frenarla. Los DTO nuevos de T10 y T12 ya siguen la convención de nombres, así que no habrá que renombrarlos.
+6. T20 OpenAPI con nombres: hecho y en `main` (`ad8f017`). Va después de la skill para no frenarla. Los DTO nuevos de T10 y T12 ya siguen la convención de nombres, así que no habrá que renombrarlos.
 7. Después: T30, T31, T34, T33, T40, T41. (T03 hecho: el plugin y la skill están en `main` desde `f041473`.)
 
-**Front:** T02 → T11 (cuando llegue T10) → T15 → la mitad de captura de T14 → T21 (cuando llegue T20) → T32 → T43 → T44 → T48 → la parte web de T42.
+**Front:** T21 hecho sobre `ad8f017` del API (57/57 contra el mock; 56/56 y 1 saltada contra el API). Sigue: T02 → T11 (cuando llegue T10) → T15 → la mitad de captura de T14 → T21 (cuando llegue T20) → T32 → T43 → T44 → T48 → la parte web de T42.
 
 ## 5. Lo que Kevin confirma antes de ejecutar
 

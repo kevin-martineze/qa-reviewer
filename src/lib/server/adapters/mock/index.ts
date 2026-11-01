@@ -698,7 +698,7 @@ export function mockGateway(locals: App.Locals): Gateways {
           email: invite.email,
           orgRole: invite.role,
           status: 'active',
-          avatar: input.avatar,
+          avatar: input.avatar ?? null,
           lastSeenAt: nowIso(),
           createdAt: nowIso(),
         };
@@ -742,7 +742,7 @@ export function mockGateway(locals: App.Locals): Gateways {
         const user = store.users.find((u) => u.id === me.data.id);
         if (!user) return err(404, 'users.not_found', 'Usuario no encontrado.');
         user.name = input.name.trim();
-        user.avatar = input.avatar;
+        user.avatar = input.avatar ?? null;
         return ok(sessionOf(user));
       },
 
